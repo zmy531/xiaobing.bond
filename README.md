@@ -1,3 +1,7 @@
+！！！！！部分功能显示异常不影响正常使用，如需完整源码请访问http://xiaobing.bond/
+
+
+
 部分页面展示图
 移动端 <img width="1220" height="2187" alt="Screenshot_2026-07-04-16-52-59-875_com android browser-edit" src="https://github.com/user-attachments/assets/41368349-4b76-468f-b07f-5647c3dbf21c" />
 
