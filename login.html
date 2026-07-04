@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理员登录 - Zmy</title>
+  <link rel="icon" href="./static/img/favicon.ico">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{font-family:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;height:100%;overflow:hidden}
+    body{background:#1a1a2e}
+    #login-page{display:flex;height:100vh}
+    .left-panel{flex:1;position:relative;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(135deg,#d4d0dc 0%,#c8c4d0 50%,#bbb7c5 100%);padding:40px 48px;overflow:hidden;min-width:450px}
+    .left-panel .logo{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;color:#fff;z-index:10}
+    .left-panel .logo svg{width:28px;height:28px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);padding:4px;border-radius:6px}
+    .characters-wrapper{position:relative;z-index:10;display:flex;align-items:flex-end;justify-content:center;height:420px}
+    .left-panel .footer-links{display:flex;gap:28px;font-size:13px;color:rgba(80,70,90,0.7);z-index:10}
+    .left-panel .footer-links a{color:inherit;text-decoration:none;transition:color 0.2s}
+    .left-panel .footer-links a:hover{color:#333}
+    .left-panel::after{content:"";position:absolute;top:20%;right:15%;width:260px;height:260px;background:rgba(180,170,200,0.25);border-radius:50%;filter:blur(80px)}
+    .left-panel::before{content:"";position:absolute;bottom:15%;left:10%;width:350px;height:350px;background:rgba(200,195,210,0.2);border-radius:50%;filter:blur(100px)}
+    .right-panel{flex:1;display:flex;align-items:center;justify-content:center;background:#fff;padding:40px;min-width:400px}
+    .form-container{width:100%;max-width:420px}
+    .sparkle-icon{display:flex;justify-content:center;margin-bottom:24px}
+    .sparkle-icon svg{width:32px;height:32px}
+    .form-header{text-align:center;margin-bottom:36px}
+    .form-header h1{font-size:28px;font-weight:700;color:#1a1a2e;letter-spacing:-0.5px;margin-bottom:6px}
+    .form-header p{font-size:14px;color:#888}
+    .form-group{margin-bottom:24px}
+    .form-group label{display:block;font-size:13px;font-weight:500;color:#333;margin-bottom:8px}
+    .form-group .input-wrapper{position:relative}
+    .form-group input{width:100%;height:52px;border:none;border-bottom:1.5px solid #e0e0e0;padding:0 40px 0 12px;font-size:15px;font-family:inherit;color:#1a1a2e;background:transparent;outline:none;transition:border-color 0.3s}
+    .form-group input:focus{border-bottom-color:#5b21b6}
+    .form-group input::placeholder{color:#ccc}
+    .form-group input[type="password"]:not(:placeholder-shown){font-family:inherit;letter-spacing:2px}
+    .form-group input[type="password"]::-ms-reveal,.form-group input[type="password"]::-ms-clear{display:none}
+    .toggle-password{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#666;padding:6px;transition:color 0.2s}
+    .toggle-password:hover{color:#333}
+    .form-options{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+    .remember-me{display:flex;align-items:center;gap:8px;font-size:13px;color:#555;cursor:pointer}
+    .remember-me input[type="checkbox"]{width:16px;height:16px;accent-color:#5b21b6;cursor:pointer}
+    .back-link{font-size:13px;color:#5b21b6;text-decoration:none;font-weight:500;transition:opacity 0.2s}
+    .back-link:hover{opacity:0.8}
+    .btn-login{position:relative;width:100%;height:54px;border-radius:27px;border:1.5px solid #1a1a2e;background:#1a1a2e;color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;overflow:hidden;margin-bottom:16px;transition:all 0.3s}
+    .btn-login .btn-text{display:inline-block;transition:all 0.3s}
+    .btn-login .btn-hover-content{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;background:#5b21b6;color:#fff;opacity:0;transition:all 0.3s;border-radius:27px}
+    .btn-login:hover .btn-text{transform:translateX(40px);opacity:0}
+    .btn-login:hover .btn-hover-content{opacity:1}
+    .btn-login:disabled{opacity:0.6;cursor:not-allowed}
+    .signup-link{text-align:center;font-size:13px;color:#888;margin-top:36px}
+    .signup-link a{color:#1a1a2e;font-weight:600;text-decoration:none}
+    .signup-link a:hover{text-decoration:underline}
+    .characters-scene{position:relative;width:480px;height:360px}
+    .character{position:absolute;bottom:0;transition:all 0.7s ease-in-out;transform-origin:bottom center}
+    .char-purple{left:60px;width:170px;height:370px;background:#6c3ff5;border-radius:10px 10px 0 0;z-index:1}
+    .char-black{left:220px;width:115px;height:290px;background:#2d2d2d;border-radius:8px 8px 0 0;z-index:2}
+    .char-orange{left:0;width:230px;height:190px;background:#ff9b6b;border-radius:115px 115px 0 0;z-index:3}
+    .char-yellow{left:290px;width:135px;height:215px;background:#e8d754;border-radius:68px 68px 0 0;z-index:4}
+    .eyes{position:absolute;display:flex;transition:all 0.7s ease-in-out}
+    .eyeball{width:18px;height:18px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;transition:height 0.15s ease;overflow:hidden}
+    .eyeball.small{width:16px;height:16px}
+    .pupil{width:7px;height:7px;border-radius:50%;background:#2d2d2d;transition:transform 0.1s ease-out}
+    .pupil.small{width:6px;height:6px}
+    .bare-pupil{width:12px;height:12px;border-radius:50%;background:#2d2d2d;transition:transform 0.7s ease-in-out}
+    .yellow-mouth{position:absolute;width:50px;height:4px;background:#2d2d2d;border-radius:2px;transition:all 0.7s ease-in-out}
+    @keyframes shakeHead{0%,100%{translate:0 0}10%{translate:-9px 0}20%{translate:7px 0}30%{translate:-6px 0}40%{translate:5px 0}50%{translate:-4px 0}60%{translate:3px 0}70%{translate:-2px 0}80%{translate:1px 0}90%{translate:-0.5px 0}}
+    .eyes.shake-head,.yellow-mouth.shake-head,.orange-mouth.shake-head{animation:shakeHead 0.8s cubic-bezier(0.36,0.07,0.19,0.97) both}
+    .orange-mouth{position:absolute;width:28px;height:14px;border:3px solid #2d2d2d;border-top:none;border-radius:0 0 14px 14px;opacity:0;transition:all 0.7s ease-in-out}
+    .orange-mouth.visible{opacity:1}
+    .error-msg{display:none;padding:12px 16px;font-size:13px;color:#dc2626;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:12px;margin-bottom:16px;line-height:1.5}
+    .form-group input.error{border-bottom-color:#dc2626}
+    .form-group label.error-label{color:#dc2626}
+    @media (max-width:900px){.left-panel{display:none}.right-panel{min-width:auto;width:100%}}
+  </style>
+</head>
+<body>
+  <div id="login-page">
+    <div class="left-panel">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <path d="M12 2L15 9H9L12 2Z" /><path d="M12 22L9 15H15L12 22Z" />
+          <path d="M2 12L9 9V15L2 12Z" /><path d="M22 12L15 15V9L22 12Z" />
+        </svg>
+        <span>Zmy Admin</span>
+      </div>
+      <div class="characters-wrapper">
+        <div class="characters-scene" id="characters-scene">
+          <div class="character char-purple" id="char-purple">
+            <div class="eyes" id="purple-eyes" style="left:45px;top:40px;gap:28px">
+              <div class="eyeball"><div class="pupil" id="purple-pupil-l"></div></div>
+              <div class="eyeball"><div class="pupil" id="purple-pupil-r"></div></div>
+            </div>
+          </div>
+          <div class="character char-black" id="char-black">
+            <div class="eyes" id="black-eyes" style="left:26px;top:32px;gap:20px">
+              <div class="eyeball small"><div class="pupil small" id="black-pupil-l"></div></div>
+              <div class="eyeball small"><div class="pupil small" id="black-pupil-r"></div></div>
+            </div>
+          </div>
+          <div class="character char-orange" id="char-orange">
+            <div class="eyes" id="orange-eyes" style="left:82px;top:90px;gap:28px">
+              <div class="bare-pupil" id="orange-pupil-l"></div><div class="bare-pupil" id="orange-pupil-r"></div>
+            </div>
+            <div class="orange-mouth" id="orange-mouth" style="left:90px;top:120px"></div>
+          </div>
+          <div class="character char-yellow" id="char-yellow">
+            <div class="eyes" id="yellow-eyes" style="left:52px;top:40px;gap:20px">
+              <div class="bare-pupil" id="yellow-pupil-l"></div><div class="bare-pupil" id="yellow-pupil-r"></div>
+            </div>
+            <div class="yellow-mouth" id="yellow-mouth" style="left:40px;top:88px"></div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="./index.html">返回主页</a>
+        <a href="./message.html">留言板</a>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="form-container">
+        <div class="sparkle-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#5b21b6"/>
+          </svg>
+        </div>
+        <div class="form-header">
+          <h1>欢迎回来</h1>
+          <p>请输入管理员账号密码</p>
+        </div>
+        <div class="error-msg" id="error-msg"></div>
+        <form id="login-form" onsubmit="return false">
+          <div class="form-group">
+            <label for="username">用户名</label>
+            <div class="input-wrapper">
+              <input type="text" id="username" placeholder="请输入用户名" value="zmy" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="password">密码</label>
+            <div class="input-wrapper">
+              <input type="password" id="password" placeholder="请输入密码" />
+              <button type="button" class="toggle-password" onclick="togglePassword()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox" checked /> 记住登录7天
+            </label>
+            <a href="./index.html" class="back-link">返回主页</a>
+          </div>
+          <button type="button" class="btn-login" id="btn-login" onclick="handleLogin()">
+            <span class="btn-text">登 录</span>
+            <span class="btn-hover-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+              <span>登 录</span>
+            </span>
+          </button>
+        </form>
+        <div class="signup-link">
+          Zmy © 2026 | <a href="http://xiaobing.bond" target="_blank">xiaobing.bond</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const btn = document.getElementById('btn-login');
+    const errEl = document.getElementById('error-msg');
+    let showPassword = false;
+
+    function togglePassword() {
+      showPassword = !showPassword;
+      passwordInput.type = showPassword ? 'text' : 'password';
+      updateCharacters();
+    }
+
+    function handleLogin() {
+      const username = usernameInput.value.trim();
+      const pwd = passwordInput.value.trim();
+      if (!username || !pwd) {
+        errEl.textContent = '请输入用户名和密码';
+        errEl.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      btn.querySelector('.btn-text').textContent = '登录中...';
+      errEl.style.display = 'none';
+
+      fetch('/api/login.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: pwd })
+      }).then(resp => {
+        const contentType = resp.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          return resp.json();
+        }
+        return resp.text().then(text => {
+          throw new Error('后端服务异常 (HTTP ' + resp.status + ')。请确认api/login.php文件已上传');
+        });
+      }).then(data => {
+        if (data.token) {
+          localStorage.setItem('admin_token', data.token);
+          localStorage.setItem('admin_user', data.username);
+          btn.querySelector('.btn-text').textContent = '登录成功，跳转中...';
+          setTimeout(() => { window.location.href = './admin.html'; }, 800);
+        } else {
+          throw new Error(data.error || '登录失败');
+        }
+      }).catch(err => {
+        btn.disabled = false;
+        btn.querySelector('.btn-text').textContent = '登 录';
+        if (err.message.includes('后端')) {
+          errEl.textContent = err.message + '。请确认api/login.php文件已上传';
+          errEl.style.background = 'rgba(251,191,36,0.1)';
+          errEl.style.borderColor = 'rgba(251,191,36,0.3)';
+          errEl.style.color = '#d97706';
+        } else {
+          errEl.textContent = err.message;
+          errEl.style.background = '';
+          errEl.style.borderColor = '';
+          errEl.style.color = '';
+          passwordInput.classList.add('error');
+          triggerLoginError();
+        }
+        errEl.style.display = 'block';
+      });
+    }
+
+    let isMouseInScene = false, isTyping = false, isPasswordFocused = false;
+    let isLoginError = false, isPurplePeeking = false;
+    let purpleBlinkTimer = null, blackBlinkTimer = null;
+    let isPurpleBlinking = false, isBlackBlinking = false;
+
+    function startBlinking() {
+      purpleBlinkTimer = setInterval(() => { isPurpleBlinking = true; updateCharacters(); setTimeout(() => { isPurpleBlinking = false; updateCharacters(); }, 150); }, 3000 + Math.random() * 2000);
+      blackBlinkTimer = setInterval(() => { isBlackBlinking = true; updateCharacters(); setTimeout(() => { isBlackBlinking = false; updateCharacters(); }, 150); }, 4000 + Math.random() * 2000);
+    }
+    startBlinking();
+
+    function calcPosition(el) {
+      const rect = el.getBoundingClientRect(), cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      const relX = (rect.left + rect.width / 2 - cx) / cx, relY = (rect.top + rect.height / 2 - cy) / cy;
+      return { faceX: relX * 12, faceY: relY * 8, bodySkew: -relX * 8 };
+    }
+
+    function calcPupilOffset(eyeEl, max) {
+      const rect = eyeEl.getBoundingClientRect(), cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      const ex = rect.left + rect.width / 2, ey = rect.top + rect.height / 2;
+      const dx = cx - ex, dy = cy - ey, dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 50) return { x: 0, y: 0 };
+      const ratio = Math.min(max / dist, 1);
+      return { x: dx * ratio, y: dy * ratio };
+    }
+
+    function updateCharacters() {
+      const purple = document.getElementById('char-purple'), black = document.getElementById('char-black');
+      const orange = document.getElementById('char-orange'), yellow = document.getElementById('char-yellow');
+      const purplePos = calcPosition(purple), blackPos = calcPosition(black);
+      const orangePos = calcPosition(orange), yellowPos = calcPosition(yellow);
+      const pwdLen = passwordInput.value.length;
+      const isShowingPwd = pwdLen > 0 && showPassword;
+      const isLookingAway = isPasswordFocused && !showPassword;
+
+      if (isShowingPwd) { purple.style.transform = 'skewX(0deg)'; purple.style.height = '370px'; }
+      else if (isLookingAway) { purple.style.transform = 'skewX(-14deg) translateX(-20px)'; purple.style.height = '410px'; }
+      else if (isTyping) { purple.style.transform = `skewX(${(purplePos.bodySkew||0)-12}deg) translateX(40px)`; purple.style.height = '410px'; }
+      else { purple.style.transform = `skewX(${purplePos.bodySkew}deg)`; purple.style.height = '370px'; }
+
+      const purpleEyes = document.getElementById('purple-eyes');
+      const purpleEyeL = purpleEyes.children[0], purpleEyeR = purpleEyes.children[1];
+      const purplePupilL = document.getElementById('purple-pupil-l'), purplePupilR = document.getElementById('purple-pupil-r');
+      purpleEyeL.style.height = isPurpleBlinking ? '2px' : '18px';
+      purpleEyeR.style.height = isPurpleBlinking ? '2px' : '18px';
+
+      if (isLoginError) { purpleEyes.style.left='30px'; purpleEyes.style.top='55px'; purplePupilL.style.transform='translate(-3px,4px)'; purplePupilR.style.transform='translate(-3px,4px)'; }
+      else if (isLookingAway) { purpleEyes.style.left='20px'; purpleEyes.style.top='25px'; purplePupilL.style.transform='translate(-5px,-5px)'; purplePupilR.style.transform='translate(-5px,-5px)'; }
+      else if (isShowingPwd) { purpleEyes.style.left='20px'; purpleEyes.style.top='35px'; const px=isPurplePeeking?4:-4,py=isPurplePeeking?5:-4; purplePupilL.style.transform=`translate(${px}px,${py}px)`; purplePupilR.style.transform=`translate(${px}px,${py}px)`; }
+      else if (isLookingAtEachOther) { purpleEyes.style.left='55px'; purpleEyes.style.top='65px'; purplePupilL.style.transform='translate(3px,4px)'; purplePupilR.style.transform='translate(3px,4px)'; }
+      else { purpleEyes.style.left=45+purplePos.faceX+'px'; purpleEyes.style.top=40+purplePos.faceY+'px'; const po=calcPupilOffset(purpleEyeL,5); purplePupilL.style.transform=`translate(${po.x}px,${po.y}px)`; purplePupilR.style.transform=`translate(${po.x}px,${po.y}px)`; }
+
+      if (isShowingPwd) black.style.transform='skewX(0deg)';
+      else if (isLookingAway) black.style.transform='skewX(12deg) translateX(-10px)';
+      else if (isLookingAtEachOther) black.style.transform=`skewX(${(blackPos.bodySkew||0)*1.5+10}deg) translateX(20px)`;
+      else if (isTyping) black.style.transform=`skewX(${(blackPos.bodySkew||0)*1.5}deg)`;
+      else black.style.transform=`skewX(${blackPos.bodySkew}deg)`;
+
+      const blackEyes=document.getElementById('black-eyes');
+      const blackEyeL=blackEyes.children[0],blackEyeR=blackEyes.children[1];
+      const blackPupilL=document.getElementById('black-pupil-l'),blackPupilR=document.getElementById('black-pupil-r');
+      blackEyeL.style.height=isBlackBlinking?'2px':'16px'; blackEyeR.style.height=isBlackBlinking?'2px':'16px';
+
+      if(isLoginError){blackEyes.style.left='15px';blackEyes.style.top='40px';blackPupilL.style.transform='translate(-3px,4px)';blackPupilR.style.transform='translate(-3px,4px)';}
+      else if(isLookingAway){blackEyes.style.left='10px';blackEyes.style.top='20px';blackPupilL.style.transform='translate(-4px,-5px)';blackPupilR.style.transform='translate(-4px,-5px)';}
+      else if(isShowingPwd){blackEyes.style.left='10px';blackEyes.style.top='28px';blackPupilL.style.transform='translate(-4px,-4px)';blackPupilR.style.transform='translate(-4px,-4px)';}
+      else if(isLookingAtEachOther){blackEyes.style.left='32px';blackEyes.style.top='12px';blackPupilL.style.transform='translate(0px,-4px)';blackPupilR.style.transform='translate(0px,-4px)';}
+      else{blackEyes.style.left=26+blackPos.faceX+'px';blackEyes.style.top=32+blackPos.faceY+'px';const bo=calcPupilOffset(blackEyeL,4);blackPupilL.style.transform=`translate(${bo.x}px,${bo.y}px)`;blackPupilR.style.transform=`translate(${bo.x}px,${bo.y}px)`;}
+
+      const orangeMouth=document.getElementById('orange-mouth');
+      if(isLoginError){orangeMouth.style.left=80+orangePos.faceX+'px';orangeMouth.style.top='130px';}
+      if(isShowingPwd)orange.style.transform='skewX(0deg)'; else orange.style.transform=`skewX(${orangePos.bodySkew}deg)`;
+
+      const orangeEyes=document.getElementById('orange-eyes');
+      const orangePupilL=document.getElementById('orange-pupil-l'),orangePupilR=document.getElementById('orange-pupil-r');
+      if(isLoginError){orangeEyes.style.left='60px';orangeEyes.style.top='95px';orangePupilL.style.transform='translate(-3px,4px)';orangePupilR.style.transform='translate(-3px,4px)';}
+      else if(isLookingAway){orangeEyes.style.left='50px';orangeEyes.style.top='75px';orangePupilL.style.transform='translate(-5px,-5px)';orangePupilR.style.transform='translate(-5px,-5px)';}
+      else if(isShowingPwd){orangeEyes.style.left='50px';orangeEyes.style.top='85px';orangePupilL.style.transform='translate(-5px,-4px)';orangePupilR.style.transform='translate(-5px,-4px)';}
+      else{orangeEyes.style.left=82+orangePos.faceX+'px';orangeEyes.style.top=90+orangePos.faceY+'px';const oo=calcPupilOffset(orangePupilL,5);orangePupilL.style.transform=`translate(${oo.x}px,${oo.y}px)`;orangePupilR.style.transform=`translate(${oo.x}px,${oo.y}px)`;}
+
+      if(isShowingPwd)yellow.style.transform='skewX(0deg)'; else yellow.style.transform=`skewX(${yellowPos.bodySkew}deg)`;
+      const yellowEyes=document.getElementById('yellow-eyes');
+      const yellowPupilL=document.getElementById('yellow-pupil-l'),yellowPupilR=document.getElementById('yellow-pupil-r');
+      const yellowMouth=document.getElementById('yellow-mouth');
+      if(isLoginError){yellowEyes.style.left='35px';yellowEyes.style.top='45px';yellowPupilL.style.transform='translate(-3px,4px)';yellowPupilR.style.transform='translate(-3px,4px)';yellowMouth.style.left='30px';yellowMouth.style.top='92px';yellowMouth.style.transform='rotate(-8deg)';}
+      else if(isLookingAway){yellowEyes.style.left='20px';yellowEyes.style.top='30px';yellowPupilL.style.transform='translate(-5px,-5px)';yellowPupilR.style.transform='translate(-5px,-5px)';yellowMouth.style.left='15px';yellowMouth.style.top='78px';yellowMouth.style.transform='rotate(0deg)';}
+      else if(isShowingPwd){yellowEyes.style.left='20px';yellowEyes.style.top='35px';yellowPupilL.style.transform='translate(-5px,-4px)';yellowPupilR.style.transform='translate(-5px,-4px)';yellowMouth.style.left='10px';yellowMouth.style.top='88px';yellowMouth.style.transform='rotate(0deg)';}
+      else{yellowEyes.style.left=52+yellowPos.faceX+'px';yellowEyes.style.top=40+yellowPos.faceY+'px';const yo=calcPupilOffset(yellowPupilL,5);yellowPupilL.style.transform=`translate(${yo.x}px,${yo.y}px)`;yellowPupilR.style.transform=`translate(${yo.x}px,${yo.y}px)`;yellowMouth.style.left=40+yellowPos.faceX+'px';yellowMouth.style.top=88+yellowPos.faceY+'px';yellowMouth.style.transform='rotate(0deg)';}
+    }
+
+    let errorRecoverTimer = null;
+    const shakeIds = ['purple-eyes','black-eyes','orange-eyes','yellow-eyes','yellow-mouth','orange-mouth'];
+    function triggerLoginError() {
+      if (errorRecoverTimer) { clearTimeout(errorRecoverTimer); errorRecoverTimer = null; }
+      const shakeEls = shakeIds.map(id => document.getElementById(id));
+      shakeEls.forEach(el => el.classList.remove('shake-head'));
+      void document.body.offsetHeight;
+      isLoginError = true; isPasswordFocused = false; updateCharacters();
+      document.getElementById('orange-mouth').classList.add('visible');
+      setTimeout(() => shakeEls.forEach(el => el.classList.add('shake-head')), 350);
+      errorRecoverTimer = setTimeout(() => {
+        isLoginError = false; errorRecoverTimer = null;
+        document.getElementById('orange-mouth').classList.remove('visible');
+        shakeEls.forEach(el => el.classList.remove('shake-head'));
+        updateCharacters();
+      }, 2500);
+    }
+
+    const scene = document.getElementById('characters-scene');
+    scene.addEventListener('mouseenter', () => { isMouseInScene = true; updateCharacters(); });
+    scene.addEventListener('mouseleave', () => { isMouseInScene = false; updateCharacters(); });
+    passwordInput.addEventListener('focus', () => { isPasswordFocused = true; updateCharacters(); });
+    passwordInput.addEventListener('blur', () => { isPasswordFocused = false; updateCharacters(); });
+    passwordInput.addEventListener('input', () => { isTyping = true; updateCharacters(); setTimeout(() => { isTyping = false; updateCharacters(); }, 300); });
+    usernameInput.addEventListener('input', () => { isTyping = true; updateCharacters(); setTimeout(() => { isTyping = false; updateCharacters(); }, 300); });
+    document.addEventListener('mousemove', updateCharacters);
+    updateCharacters();
+
+    try { fetch('/api/visitor.php?path=' + encodeURIComponent(location.pathname)); } catch(e) {}
+  </script>
+
+  <script>
+    (function() {
+      const audio = document.createElement('audio');
+      audio.src = './背景乐.mp3';
+      audio.loop = true;
+      audio.volume = 0.5;
+      audio.preload = 'auto';
+      document.body.appendChild(audio);
+
+      const player = document.createElement('div');
+      player.style.cssText = 'position:fixed;bottom:30px;right:30px;z-index:9999;';
+      player.innerHTML = `
+        <div style="width:50px;height:50px;border-radius:50%;background:rgba(26,26,46,0.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(128,128,128,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:all 0.3s;"
+             onmouseover="this.style.transform='scale(1.1)'"
+             onmouseout="this.style.transform='scale(1)'">
+          <svg viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor;display:none" class="m-play"><path d="M572.9 243.2c-7.1-1.4-14.2-2-21.3-2-60.2 0-109.3 49.1-109.3 109.3v250.2c-12.8-7.6-27.1-12.1-42.7-12.1-60.2 0-109.3 49.1-109.3 109.3s49.1 109.3 109.3 109.3 109.3-49.1 109.3-109.3V372.1c0-36.2 29.3-65.5 65.5-65.5 7.1 0 14.2 1.1 21.3 3.2V243.2z"></path></svg>
+          <svg viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor" class="m-pause"><path d="M349.749455 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863zM776.718909 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863z"></path></svg>
+        </div>`;
+      document.body.appendChild(player);
+
+      const playIcon = player.querySelector('.m-play');
+      const pauseIcon = player.querySelector('.m-pause');
+      let playing = false;
+
+      function toggle() {
+        if (playing) {
+          audio.pause();
+          playing = false;
+          playIcon.style.display = 'none';
+          pauseIcon.style.display = 'block';
+          localStorage.setItem('musicPlaying', 'false');
+        } else {
+          audio.play().then(() => {
+            playing = true;
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            localStorage.setItem('musicPlaying', 'true');
+          }).catch(() => {});
+        }
+      }
+      player.querySelector('div').addEventListener('click', toggle);
+
+      function tryPlay() {
+        if (localStorage.getItem('musicPlaying') === 'false') return;
+        audio.play().then(() => {
+          playing = true;
+          playIcon.style.display = 'block';
+          pauseIcon.style.display = 'none';
+        }).catch(() => {
+          const firstInteract = () => {
+            if (localStorage.getItem('musicPlaying') !== 'false') {
+              audio.play().then(() => {
+                playing = true;
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+              }).catch(() => {});
+            }
+            document.removeEventListener('click', firstInteract);
+            document.removeEventListener('touchstart', firstInteract);
+          };
+          document.addEventListener('click', firstInteract, { once: true });
+          document.addEventListener('touchstart', firstInteract, { once: true });
+        });
+      }
+      tryPlay();
+    })();
+  </script>
+</body>
+</html>

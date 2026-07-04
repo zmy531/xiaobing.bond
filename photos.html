@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>照片墙 - Zmy</title>
+	<link rel="icon" href="./static/img/favicon.ico">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="./static/css/style.css">
+	<link rel="stylesheet" href="./static/css/root.css">
+	<style>
+		.photo-page { max-width: 1200px; margin: 0 auto; padding: 20px; min-height: 100vh; }
+		.photo-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-top: 20px; }
+		.photo-header .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter)); color: var(--main_text_color); font-size: 14px; transition: all 0.3s; }
+		.photo-header .back-btn:hover { background: var(--item_hover_color); transform: translateX(-3px); }
+		.photo-header h1 { font-size: 32px; font-weight: 800; font-family: "title"; }
+
+		/* 堆叠卡片模式 */
+		.stack-section { position: relative; height: 500px; display: flex; align-items: center; justify-content: center; perspective: 1000px; margin-bottom: 40px; }
+		.stack-container { position: relative; width: 300px; height: 400px; }
+		.stack-card {
+			position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+			border-radius: 16px; overflow: hidden;
+			background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter));
+			box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+			cursor: grab;
+			transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+			user-select: none;
+			touch-action: none;
+			will-change: transform, opacity;
+			contain: layout style paint;
+		}
+		.stack-card:active { cursor: grabbing; }
+		.stack-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; background: rgba(128,128,128,0.15); }
+		.stack-card img.loaded { opacity: 1; }
+		.stack-card .photo-caption {
+			position: absolute; bottom: 0; left: 0; right: 0;
+			padding: 20px;
+			background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+			color: #fff; font-size: 14px;
+		}
+
+		.stack-hint {
+			position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%);
+			font-size: 13px; color: var(--item_left_text_color); white-space: nowrap;
+			animation: hintBounce 2s infinite;
+		}
+		@keyframes hintBounce {
+			0%, 100% { transform: translateX(-50%) translateY(0); }
+			50% { transform: translateX(-50%) translateY(-5px); }
+		}
+
+		.stack-nav {
+			position: absolute; top: 50%; transform: translateY(-50%);
+			width: 44px; height: 44px; border-radius: 50%;
+			background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter));
+			display: flex; align-items: center; justify-content: center;
+			cursor: pointer; z-index: 100; color: var(--main_text_color);
+			transition: all 0.3s; border: 1px solid rgba(128,128,128,0.2);
+		}
+		.stack-nav:hover { background: var(--text_bg_color); transform: translateY(-50%) scale(1.1); }
+		.stack-nav.prev { left: 20px; }
+		.stack-nav.next { right: 20px; }
+		.stack-nav svg { width: 22px; height: 22px; fill: currentColor; }
+
+		/* 网格视图 */
+		.view-toggle { display: flex; justify-content: flex-end; margin-bottom: 16px; gap: 8px; }
+		.view-btn { padding: 6px 14px; border-radius: 8px; background: var(--item_bg_color); color: var(--item_left_text_color); font-size: 13px; cursor: pointer; transition: all 0.3s; }
+		.view-btn.active { background: var(--text_bg_color); color: var(--main_text_color); }
+
+		.grid-section { display: none; }
+		.grid-section.active { display: block; }
+		.grid-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+		.grid-photo { aspect-ratio: 1; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.3s; will-change: transform; background: var(--item_bg_color); }
+		.grid-photo:hover { transform: scale(1.03); }
+		.grid-photo img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
+		.grid-photo img.loaded { opacity: 1; }
+
+		/* 灯箱 */
+		.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 99999; padding: 20px; }
+		.lightbox.active { display: flex; }
+		.lightbox img { max-width: 90%; max-height: 85vh; border-radius: 12px; }
+		.lightbox-close { position: absolute; top: 30px; right: 30px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.1); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; }
+
+		.empty-tip { text-align: center; padding: 60px; color: var(--item_left_text_color); font-size: 14px; }
+
+		@media (max-width: 600px) {
+			.photo-page { padding: 12px; }
+			.photo-header h1 { font-size: 24px; }
+			.stack-section { height: 420px; }
+			.stack-container { width: 260px; height: 360px; }
+			.stack-nav { width: 36px; height: 36px; }
+			.stack-nav.prev { left: 5px; }
+			.stack-nav.next { right: 5px; }
+			.grid-photos { grid-template-columns: repeat(3, 1fr); }
+		}
+	</style>
+</head>
+<body>
+	<div id="zmy-loading"><div id="zmy-loading-center"></div></div>
+	<div class="zmy-filter"></div>
+
+	<div class="photo-page">
+		<div class="photo-header">
+			<a href="./index.html" class="back-btn" style="display:inline-flex;align-items:center;gap:6px">
+				<svg viewBox="0 0 1024 1024" style="width:18px;height:18px;fill:var(--fill)" fill="currentColor"><path d="M768 352c0-17.066667-6.4-34.133333-19.2-46.933333-25.6-25.6-68.266667-25.6-93.866667 0L320 640c-25.6 25.6-25.6 68.266667 0 93.866667l334.933333 334.933333c25.6 25.6 68.266667 25.6 93.866667 0s25.6-68.266667 0-93.866667L460.8 686.933333l288-288C768 386.133333 768 369.066667 768 352z" transform="rotate(180 512 512)"></path></svg>
+				返回主页
+			</a>
+			<h1>照片墙</h1>
+			<div style="width:80px"></div>
+		</div>
+
+		<div class="view-toggle">
+			<div class="view-btn active" data-view="stack">堆叠</div>
+			<div class="view-btn" data-view="grid">网格</div>
+		</div>
+
+		<!-- 堆叠视图 -->
+		<div class="stack-section" id="stack-section">
+			<div class="stack-nav prev" onclick="prevPhoto()">
+				<svg viewBox="0 0 1024 1024"><path d="M768 352c0-17.066667-6.4-34.133333-19.2-46.933333-25.6-25.6-68.266667-25.6-93.866667 0L320 640c-25.6 25.6-25.6 68.266667 0 93.866667l334.933333 334.933333c25.6 25.6 68.266667 25.6 93.866667 0s25.6-68.266667 0-93.866667L460.8 686.933333l288-288C768 386.133333 768 369.066667 768 352z" transform="rotate(180 512 512)"></path></svg>
+			</div>
+			<div class="stack-container" id="stack-container">
+				<div class="empty-tip" id="stack-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap">加载中...</div>
+			</div>
+			<div class="stack-nav next" onclick="nextPhoto()">
+				<svg viewBox="0 0 1024 1024"><path d="M768 352c0-17.066667-6.4-34.133333-19.2-46.933333-25.6-25.6-68.266667-25.6-93.866667 0L320 640c-25.6 25.6-25.6 68.266667 0 93.866667l334.933333 334.933333c25.6 25.6 68.266667 25.6 93.866667 0s25.6-68.266667 0-93.866667L460.8 686.933333l288-288C768 386.133333 768 369.066667 768 352z"></path></svg>
+			</div>
+			<div class="stack-hint" id="stack-hint" style="display:none">左右滑动 / 点击箭头切换照片</div>
+		</div>
+
+		<!-- 网格视图 -->
+		<div class="grid-section" id="grid-section">
+			<div class="grid-photos" id="grid-photos"></div>
+		</div>
+	</div>
+
+	<!-- 灯箱 -->
+	<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+		<div class="lightbox-close">×</div>
+		<img id="lightbox-img" src="" alt="">
+	</div>
+
+	<footer style="position:relative;padding:20px;text-align:center;color:var(--footer_text_color);font-size:13px;">
+		Zmy © 2026
+	</footer>
+
+	<script>
+		let photos = [];
+		let currentIndex = 0;
+		let isDragging = false;
+		let startX = 0;
+		let currentX = 0;
+
+		async function loadPhotos() {
+			try {
+				const resp = await fetch('/api/photos.php?action=list');
+				const data = await resp.json();
+				photos = data.photos || [];
+				renderStack();
+				renderGrid();
+				if (photos.length > 0) {
+					document.getElementById('stack-hint').style.display = 'block';
+					document.getElementById('stack-empty').style.display = 'none';
+				} else {
+					document.getElementById('stack-empty').textContent = '暂无照片';
+					document.getElementById('stack-empty').style.display = 'block';
+				}
+			} catch (e) {
+				document.getElementById('stack-empty').textContent = '加载失败';
+				console.error(e);
+			}
+		}
+
+		function renderStack() {
+			const container = document.getElementById('stack-container');
+			const empty = document.getElementById('stack-empty');
+			if (photos.length === 0) {
+				container.innerHTML = '';
+				container.appendChild(empty);
+				return;
+			}
+			container.innerHTML = '';
+			container.appendChild(empty);
+			empty.style.display = 'none';
+
+			const visibleCount = Math.min(5, photos.length);
+			for (let i = visibleCount - 1; i >= 0; i--) {
+				const idx = (currentIndex + i) % photos.length;
+				const card = document.createElement('div');
+				card.className = 'stack-card';
+				card.dataset.index = i;
+				const scale = 1 - i * 0.08;
+				const offsetY = i * 15;
+				const offsetZ = i * -30;
+				const rot = (Math.random() - 0.5) * 4;
+				card.style.transform = `translateY(${offsetY}px) scale(${scale}) rotate(${rot}deg)`;
+				card.style.zIndex = 100 - i;
+				card.style.opacity = 1 - i * 0.15;
+				card.innerHTML = `
+					<img src="${photos[idx].url}" alt="${escapeHtml(photos[idx].title || '')}" draggable="false" loading="lazy" onload="this.classList.add('loaded')">
+					<div class="photo-caption">${escapeHtml(photos[idx].title || '照片')} · ${currentIndex + 1}/${photos.length}</div>
+				`;
+				card.addEventListener('click', () => openLightbox(photos[currentIndex].url));
+				container.appendChild(card);
+			}
+			setupDrag(container);
+		}
+
+		function setupDrag(container) {
+			if (container._dragBound) return;
+			container._dragBound = true;
+			container.addEventListener('mousedown', startDrag);
+			container.addEventListener('touchstart', startDrag, { passive: false });
+		}
+
+		function startDrag(e) {
+			isDragging = true;
+			startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+			currentX = startX;
+
+			const onMove = (ev) => {
+				if (!isDragging) return;
+				ev.preventDefault();
+				const x = ev.type === 'mousemove' ? ev.clientX : ev.touches[0].clientX;
+				currentX = x;
+				const delta = x - startX;
+				const cards = document.querySelectorAll('.stack-card');
+				cards.forEach((card, i) => {
+					const idx = parseInt(card.dataset.index);
+					if (idx === 0) {
+						const rot = delta / 15;
+						card.style.transform = `translateX(${delta}px) rotate(${rot}deg)`;
+					}
+				});
+			};
+
+			const onEnd = () => {
+				if (!isDragging) return;
+				isDragging = false;
+				const delta = currentX - startX;
+				if (Math.abs(delta) > 80) {
+					if (delta > 0) prevPhoto();
+					else nextPhoto();
+				} else {
+					renderStack();
+				}
+				document.removeEventListener('mousemove', onMove);
+				document.removeEventListener('mouseup', onEnd);
+				document.removeEventListener('touchmove', onMove);
+				document.removeEventListener('touchend', onEnd);
+			};
+
+			document.addEventListener('mousemove', onMove);
+			document.addEventListener('mouseup', onEnd);
+			document.addEventListener('touchmove', onMove, { passive: false });
+			document.addEventListener('touchend', onEnd);
+		}
+
+		function prevPhoto() {
+			if (photos.length === 0) return;
+			currentIndex = (currentIndex - 1 + photos.length) % photos.length;
+			animateSwitch('left');
+		}
+
+		function nextPhoto() {
+			if (photos.length === 0) return;
+			currentIndex = (currentIndex + 1) % photos.length;
+			animateSwitch('right');
+		}
+
+		function animateSwitch(dir) {
+			const cards = document.querySelectorAll('.stack-card');
+			cards.forEach((card, i) => {
+				const idx = parseInt(card.dataset.index);
+				if (idx === 0) {
+					card.style.transition = 'transform 0.4s, opacity 0.4s';
+					card.style.transform = dir === 'right'
+						? 'translateX(500px) rotate(30deg)'
+						: 'translateX(-500px) rotate(-30deg)';
+					card.style.opacity = '0';
+				}
+			});
+			setTimeout(() => renderStack(), 300);
+		}
+
+		const GRID_PAGE_SIZE = 12;
+		let gridLoadedCount = 0;
+		let gridObserver = null;
+
+		function renderGrid() {
+			const grid = document.getElementById('grid-photos');
+			gridLoadedCount = 0;
+			if (gridObserver) { gridObserver.disconnect(); gridObserver = null; }
+			if (photos.length === 0) {
+				grid.innerHTML = '<div class="empty-tip" style="grid-column:1/-1">暂无照片</div>';
+				return;
+			}
+			grid.innerHTML = '';
+			loadMoreGrid();
+		}
+
+		function loadMoreGrid() {
+			const grid = document.getElementById('grid-photos');
+			if (gridLoadedCount >= photos.length) return;
+			const end = Math.min(gridLoadedCount + GRID_PAGE_SIZE, photos.length);
+			const frag = document.createDocumentFragment();
+			for (let i = gridLoadedCount; i < end; i++) {
+				const p = photos[i];
+				const item = document.createElement('div');
+				item.className = 'grid-photo';
+				item.onclick = () => openLightbox(p.url);
+				const img = document.createElement('img');
+				img.alt = p.title || '';
+				img.loading = 'lazy';
+				img.onload = function() { this.classList.add('loaded'); };
+				img.onerror = function() { this.classList.add('loaded'); };
+				img.src = p.url;
+				item.appendChild(img);
+				frag.appendChild(item);
+			}
+			grid.appendChild(frag);
+			gridLoadedCount = end;
+			setupGridObserver();
+		}
+
+		function setupGridObserver() {
+			const grid = document.getElementById('grid-photos');
+			if (gridLoadedCount >= photos.length) return;
+			const sentinel = document.createElement('div');
+			sentinel.style.cssText = 'grid-column:1/-1;height:40px;display:flex;align-items:center;justify-content:center;color:var(--item_left_text_color);font-size:13px;';
+			sentinel.textContent = '加载更多...';
+			grid.appendChild(sentinel);
+			gridObserver = new IntersectionObserver((entries) => {
+				if (entries[0].isIntersecting) {
+					gridObserver.disconnect();
+					sentinel.remove();
+					loadMoreGrid();
+				}
+			}, { rootMargin: '200px' });
+			gridObserver.observe(sentinel);
+		}
+
+		function openLightbox(src) {
+			document.getElementById('lightbox-img').src = src;
+			document.getElementById('lightbox').classList.add('active');
+		}
+
+		function closeLightbox() {
+			document.getElementById('lightbox').classList.remove('active');
+		}
+
+		// 视图切换
+		document.querySelectorAll('.view-btn').forEach(btn => {
+			btn.addEventListener('click', () => {
+				document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+				btn.classList.add('active');
+				const view = btn.dataset.view;
+				if (view === 'stack') {
+					document.getElementById('stack-section').style.display = 'flex';
+					document.getElementById('grid-section').classList.remove('active');
+				} else {
+					document.getElementById('stack-section').style.display = 'none';
+					document.getElementById('grid-section').classList.add('active');
+				}
+			});
+		});
+
+		// 键盘支持
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'ArrowLeft') prevPhoto();
+			if (e.key === 'ArrowRight') nextPhoto();
+			if (e.key === 'Escape') closeLightbox();
+		});
+
+		function escapeHtml(s) {
+			return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+		}
+
+		loadPhotos();
+
+		// 访客统计
+		try { fetch('/api/visitor.php?path=' + encodeURIComponent(location.pathname)); } catch(e) {}
+
+		var pageLoading = document.querySelector("#zmy-loading");
+		window.addEventListener('load', function() { setTimeout(function() { pageLoading.style.opacity = '0'; }, 100); });
+
+		// ============ 音乐播放器 ============
+		(function() {
+			const audio = document.createElement('audio');
+			audio.src = './背景乐.mp3';
+			audio.loop = true;
+			audio.volume = 0.5;
+			audio.preload = 'auto';
+			document.body.appendChild(audio);
+
+			const player = document.createElement('div');
+			player.style.cssText = 'position:fixed;bottom:80px;right:30px;z-index:9999;';
+			player.innerHTML = `
+				<div style="width:50px;height:50px;border-radius:50%;background:var(--item_bg_color);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(128,128,128,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--main_text_color);transition:all 0.3s;"
+					 onmouseover="this.style.transform='scale(1.1)'"
+					 onmouseout="this.style.transform='scale(1)'">
+					<svg viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor;display:none" class="m-play"><path d="M572.9 243.2c-7.1-1.4-14.2-2-21.3-2-60.2 0-109.3 49.1-109.3 109.3v250.2c-12.8-7.6-27.1-12.1-42.7-12.1-60.2 0-109.3 49.1-109.3 109.3s49.1 109.3 109.3 109.3 109.3-49.1 109.3-109.3V372.1c0-36.2 29.3-65.5 65.5-65.5 7.1 0 14.2 1.1 21.3 3.2V243.2z"></path></svg>
+					<svg viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor" class="m-pause"><path d="M349.749455 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863zM776.718909 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863z"></path></svg>
+				</div>`;
+			document.body.appendChild(player);
+
+			const playIcon = player.querySelector('.m-play');
+			const pauseIcon = player.querySelector('.m-pause');
+			let playing = false;
+
+			function toggle() {
+				if (playing) {
+					audio.pause();
+					playing = false;
+					playIcon.style.display = 'none';
+					pauseIcon.style.display = 'block';
+					localStorage.setItem('musicPlaying', 'false');
+				} else {
+					audio.play().then(() => {
+						playing = true;
+						playIcon.style.display = 'block';
+						pauseIcon.style.display = 'none';
+						localStorage.setItem('musicPlaying', 'true');
+					}).catch(() => {});
+				}
+			}
+			player.querySelector('div').addEventListener('click', toggle);
+
+			function tryPlay() {
+				if (localStorage.getItem('musicPlaying') === 'false') return;
+				audio.play().then(() => {
+					playing = true;
+					playIcon.style.display = 'block';
+					pauseIcon.style.display = 'none';
+				}).catch(() => {
+					const firstInteract = () => {
+						if (localStorage.getItem('musicPlaying') !== 'false') {
+							audio.play().then(() => {
+								playing = true;
+								playIcon.style.display = 'block';
+								pauseIcon.style.display = 'none';
+							}).catch(() => {});
+						}
+						document.removeEventListener('click', firstInteract);
+						document.removeEventListener('touchstart', firstInteract);
+					};
+					document.addEventListener('click', firstInteract, { once: true });
+					document.addEventListener('touchstart', firstInteract, { once: true });
+				});
+			}
+			tryPlay();
+		})();
+	</script>
+	<style>
+		@media (max-width: 768px) {
+			body > div[style*="bottom:80px"] { bottom: 60px !important; right: 20px !important; }
+			body > div[style*="bottom:80px"] > div { width: 40px !important; height: 40px !important; }
+			body > div[style*="bottom:80px"] svg { width: 20px !important; height: 20px !important; }
+		}
+	</style>
+</body>
+</html>

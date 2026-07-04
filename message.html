@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>留言板 - Zmy</title>
+	<link rel="icon" href="./static/img/favicon.ico">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="./static/css/style.css">
+	<link rel="stylesheet" href="./static/css/root.css">
+	<style>
+		.msg-page { max-width: 800px; margin: 0 auto; padding: 20px; min-height: 100vh; }
+
+		.msg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-top: 20px; }
+		.msg-header .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter)); color: var(--main_text_color); font-size: 14px; transition: all 0.3s; }
+		.msg-header .back-btn:hover { background: var(--item_hover_color); transform: translateX(-3px); }
+		.msg-header .back-btn svg { width: 18px; height: 18px; fill: var(--fill); }
+		.msg-header h1 { font-size: 32px; font-weight: 800; font-family: "title"; }
+		.msg-header .theme-switch { display: flex; align-items: center; }
+
+		/* 发布留言表单 */
+		.msg-form-box { border-radius: 15px; padding: 24px; margin-bottom: 30px; background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter)); }
+		.msg-form-box h2 { font-size: 18px; margin-bottom: 16px; color: var(--item_left_title_color); display: flex; align-items: center; gap: 8px; }
+		.msg-form-box h2 svg { width: 20px; height: 20px; fill: var(--fill); }
+		.msg-form-box .input-row { margin-bottom: 14px; }
+		.msg-form-box label { display: block; font-size: 13px; margin-bottom: 6px; color: var(--item_left_text_color); }
+		.msg-form-box input[type="text"], .msg-form-box textarea { width: 100%; border: 1px solid rgba(128,128,128,0.2); border-radius: 10px; padding: 10px 14px; font-size: 15px; font-family: inherit; background: rgba(255,255,255,0.06); color: var(--main_text_color); outline: none; transition: border-color 0.3s; resize: vertical; }
+		.msg-form-box input[type="text"]::placeholder, .msg-form-box textarea::placeholder { color: rgba(128,128,128,0.5); }
+		.msg-form-box input[type="text"]:focus, .msg-form-box textarea:focus { border-color: var(--purple_text_color); }
+		.msg-form-box textarea { min-height: 80px; max-height: 200px; }
+
+		.msg-media-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+		.media-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(128,128,128,0.2); background: rgba(255,255,255,0.06); color: var(--main_text_color); font-size: 13px; cursor: pointer; transition: all 0.3s; font-family: inherit; }
+		.media-btn:hover { background: var(--item_hover_color); }
+		.media-btn svg { width: 16px; height: 16px; fill: var(--fill); }
+		.media-btn.recording { background: #dc2626; color: #fff; border-color: #dc2626; animation: pulse-rec 1s ease infinite; }
+		@keyframes pulse-rec { 0%,100%{opacity:1} 50%{opacity:0.7} }
+		.media-btn.recording svg { fill: #fff; }
+
+		.image-preview { max-width: 200px; max-height: 150px; border-radius: 10px; margin-top: 8px; display: none; }
+		.voice-preview-wrap { display: none; margin-top: 8px; align-items: center; gap: 8px; }
+		.voice-preview-wrap audio { height: 32px; max-width: 250px; }
+		.voice-preview-wrap .clear-voice { font-size: 12px; color: #dc2626; cursor: pointer; }
+		.image-clear { font-size: 12px; color: #dc2626; cursor: pointer; margin-left: 8px; }
+
+		.submit-btn { width: 100%; padding: 12px; border: none; border-radius: 25px; background: var(--text_bg_color); color: var(--main_text_color); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: inherit; }
+		.submit-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+		.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+		/* 留言列表 */
+		.msg-list { display: flex; flex-direction: column; gap: 16px; }
+		.msg-item { border-radius: 15px; padding: 20px; background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter)); transition: transform 0.2s; }
+		.msg-item:hover { transform: translateY(-2px); }
+		.msg-item .msg-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+		.msg-item .msg-name { font-weight: 700; font-size: 16px; color: var(--item_left_title_color); display: flex; align-items: center; gap: 8px; }
+		.msg-item .msg-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; flex-shrink: 0; }
+		.msg-item .msg-time { font-size: 12px; color: var(--item_left_text_color); }
+		.msg-item .msg-content { font-size: 15px; line-height: 1.7; color: var(--main_text_color); word-break: break-word; white-space: pre-wrap; margin-bottom: 10px; }
+		.msg-item .msg-image { max-width: 100%; max-height: 300px; border-radius: 10px; margin-top: 8px; cursor: pointer; }
+		.msg-item .msg-voice { margin-top: 8px; }
+		.msg-item .msg-voice audio { width: 100%; max-width: 300px; height: 36px; }
+
+		.loading-tip, .empty-tip { text-align: center; padding: 40px; color: var(--item_left_text_color); font-size: 14px; }
+
+		/* 图片大图弹窗 */
+		.img-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 99999; cursor: zoom-out; }
+		.img-modal.active { display: flex; }
+		.img-modal img { max-width: 90%; max-height: 90%; border-radius: 10px; }
+
+		@media (max-width: 600px) {
+			.msg-page { padding: 12px; }
+			.msg-header h1 { font-size: 24px; }
+			.msg-form-box { padding: 16px; }
+		}
+	</style>
+</head>
+
+<body>
+	<div id="zmy-loading"><div id="zmy-loading-center"></div></div>
+	<div class="zmy-filter"></div>
+
+	<div class="msg-page">
+		<div class="msg-header">
+			<a href="./index.html" class="back-btn">
+				<svg viewBox="0 0 1024 1024"><path d="M768 352c0-17.066667-6.4-34.133333-19.2-46.933333-25.6-25.6-68.266667-25.6-93.866667 0L320 640c-25.6 25.6-25.6 68.266667 0 93.866667l334.933333 334.933333c25.6 25.6 68.266667 25.6 93.866667 0s25.6-68.266667 0-93.866667L460.8 686.933333l288-288C768 386.133333 768 369.066667 768 352z" transform="rotate(180 512 512)"></path></svg>
+				返回主页
+			</a>
+			<h1>留言板</h1>
+			<a href="javascript:void(0)" class="switch msg-header-theme">
+				<div class="onoffswitch">
+					<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch" checked>
+					<label class="onoffswitch-label" for="myonoffswitch">
+						<span class="onoffswitch-inner"></span>
+						<span class="onoffswitch-switch"></span>
+					</label>
+				</div>
+			</a>
+		</div>
+
+		<!-- 发布留言 -->
+		<div class="msg-form-box">
+			<h2>
+				<svg viewBox="0 0 1024 1024"><path d="M512 64C264.6 64 64 228.6 64 432c0 112 56 212.6 144 280v208l160-96c44 12 92 16 144 16 247.4 0 448-164.6 448-368S759.4 64 512 64z" fill="currentColor"/></svg>
+				写下你的留言
+			</h2>
+			<div class="input-row">
+				<label>昵称</label>
+				<input type="text" id="msg-name" placeholder="匿名访客（可选）" maxlength="30" />
+			</div>
+			<div class="input-row">
+				<label>QQ号（选填，显示头像）</label>
+				<input type="text" id="msg-qq" placeholder="输入QQ号显示QQ头像（可选）" maxlength="15" />
+			</div>
+			<div class="input-row">
+				<label>内容</label>
+				<textarea id="msg-content" placeholder="说点什么吧..." maxlength="1000"></textarea>
+			</div>
+			<div class="msg-media-row">
+				<label class="media-btn" for="img-upload">
+					<svg viewBox="0 0 1024 1024"><path d="M864 128H160C89.6 128 32 185.6 32 256v512c0 70.4 57.6 128 128 128h704c70.4 0 128-57.6 128-128V256c0-70.4-57.6-128-128-128zM160 192h704c35.2 0 64 28.8 64 64v364.8l-169.6-169.6c-12.8-12.8-32-12.8-44.8 0L444.8 715.2l-118.4-118.4c-12.8-12.8-32-12.8-44.8 0L96 881.6V256c0-35.2 28.8-64 64-64z" fill="currentColor"/></svg>
+					图片
+				</label>
+				<input type="file" id="img-upload" accept="image/*" style="display:none" />
+				<button type="button" class="media-btn" id="voice-btn">
+					<svg viewBox="0 0 1024 1024"><path d="M512 64c-88 0-160 72-160 160v320c0 88 72 160 160 160s160-72 160-160V224c0-88-72-160-160-160zm224 480c0 123.2-99.2 224-224 224s-224-100.8-224-224H224c0 140.8 104 257.6 240 278.4V928h96v-105.6c136-20.8 240-137.6 240-278.4h-64z" fill="currentColor"/></svg>
+					<span id="voice-btn-text">语音留言</span>
+				</button>
+			</div>
+			<div>
+				<img class="image-preview" id="img-preview" />
+				<div class="voice-preview-wrap" id="voice-preview-wrap">
+					<audio id="voice-preview" controls></audio>
+					<span class="clear-voice" id="clear-voice">删除录音</span>
+				</div>
+			</div>
+			<div style="margin-top:14px">
+				<button class="submit-btn" id="submit-msg">发 布 留 言</button>
+			</div>
+		</div>
+
+		<!-- 留言列表 -->
+		<div class="msg-list" id="msg-list">
+			<div class="loading-tip">加载中...</div>
+		</div>
+	</div>
+
+	<!-- 图片大图弹窗 -->
+	<div class="img-modal" id="img-modal"><img id="img-modal-src" /></div>
+
+	<footer style="position:relative;padding:20px;text-align:center;color:var(--footer_text_color);font-size:13px;">
+		Zmy © 2026 | <a href="https://xiaobing.bond" style="color:inherit">xiaobing.bond</a>
+	</footer>
+
+	<script>
+		// ============ 主题切换 ============
+		function setCookie(n,v,d){var e="";if(d){var t=new Date();t.setTime(t.getTime()+d*864e5);e=";expires="+t.toUTCString()}document.cookie=n+"="+v+e+";path=/"}
+		function getCookie(n){var q=n+"=";var c=document.cookie.split(';');for(var i=0;i<c.length;i++){var x=c[i];while(x.charAt(0)==' ')x=x.substring(1);if(x.indexOf(q)==0)return x.substring(q.length,x.length)}return null}
+		var html=document.querySelector('html');
+		var themeState=getCookie("themeState")||"Light";
+		var Checkbox=document.getElementById('myonoffswitch');
+		function changeTheme(t){html.dataset.theme=t;setCookie("themeState",t,365);themeState=t;}
+		Checkbox.addEventListener('change',function(){changeTheme(themeState=="Dark"?"Light":"Dark");});
+		if(themeState=="Dark")Checkbox.checked=false;
+		changeTheme(themeState);
+
+		// ============ 图片上传 ============
+		let selectedImage = null;
+		const imgUpload = document.getElementById('img-upload');
+		const imgPreview = document.getElementById('img-preview');
+		imgUpload.addEventListener('change', (e) => {
+			const f = e.target.files[0];
+			if (!f) return;
+			if (f.size > 10 * 1024 * 1024) { alert('图片不能超过10MB'); return; }
+			selectedImage = f;
+			imgPreview.src = URL.createObjectURL(f);
+			imgPreview.style.display = 'block';
+		});
+
+		// ============ QQ头像预览 ============
+		const msgQq = document.getElementById('msg-qq');
+		msgQq.addEventListener('input', () => {
+			const qq = msgQq.value.trim();
+			const nameInput = document.getElementById('msg-name');
+			const name = nameInput.value.trim();
+			if (qq && /^\d{5,12}$/.test(qq)) {
+				const avatarUrl = 'https://q1.qlogo.cn/g?b=qq&nk=' + qq + '&s=100';
+				const img = new Image();
+				img.src = avatarUrl;
+			}
+		});
+
+		// ============ 语音录音 ============
+		let mediaRecorder = null, audioChunks = [], recordedVoice = null, recordingStream = null;
+		let isRequestingMedia = false;      // 防止重复点击导致并发录音
+		let voiceObjectUrl = null;          // 跟踪预览对象URL，避免内存泄漏
+		let recordTimer = null;             // 录音计时器（自动停止）
+		let voiceMimeType = 'audio/webm';   // 录音MIME类型，按浏览器支持自动选择
+		const voiceBtn = document.getElementById('voice-btn');
+		const voiceBtnText = document.getElementById('voice-btn-text');
+		const voicePreviewWrap = document.getElementById('voice-preview-wrap');
+		const voicePreview = document.getElementById('voice-preview');
+		const clearVoice = document.getElementById('clear-voice');
+
+		// 根据浏览器支持选择录音格式（Safari不支持webm，需回退到mp4等）
+		function pickSupportedMime() {
+			const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', ''];
+			for (const m of candidates) {
+				if (m === '' || (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m))) return m;
+			}
+			return '';
+		}
+
+		function revokeVoiceUrl() {
+			if (voiceObjectUrl) { URL.revokeObjectURL(voiceObjectUrl); voiceObjectUrl = null; }
+		}
+
+		voiceBtn.addEventListener('click', async () => {
+			if (isRequestingMedia) return;   // 正在请求麦克风，忽略重复点击
+			if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); return; }
+			if (typeof MediaRecorder === 'undefined') {
+				alert('当前浏览器不支持语音录制，请使用Chrome/Firefox/Edge或升级浏览器');
+				return;
+			}
+			isRequestingMedia = true;
+			voiceBtn.disabled = true;
+			try {
+				recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				audioChunks = [];
+				voiceMimeType = pickSupportedMime();
+				mediaRecorder = voiceMimeType
+					? new MediaRecorder(recordingStream, { mimeType: voiceMimeType })
+					: new MediaRecorder(recordingStream);
+				mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+				mediaRecorder.onstop = () => {
+					const type = voiceMimeType || 'audio/webm';
+					const blob = new Blob(audioChunks, { type });
+					const ext = type.indexOf('mp4') >= 0 ? 'm4a' : (type.indexOf('ogg') >= 0 ? 'ogg' : 'webm');
+					recordedVoice = new File([blob], 'voice.' + ext, { type });
+					revokeVoiceUrl();
+					voiceObjectUrl = URL.createObjectURL(blob);
+					voicePreview.src = voiceObjectUrl;
+					voicePreviewWrap.style.display = 'flex';
+					voiceBtnText.textContent = '重新录音';
+					voiceBtn.classList.remove('recording');
+					if (recordingStream) { recordingStream.getTracks().forEach(t => t.stop()); recordingStream = null; }
+					if (recordTimer) { clearTimeout(recordTimer); recordTimer = null; }
+				};
+				mediaRecorder.start();
+				voiceBtn.classList.add('recording');
+				voiceBtnText.textContent = '停止录音';
+				// 录音最长60秒自动停止，防止忘记停止产生超大文件
+				recordTimer = setTimeout(() => { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); }, 60000);
+			} catch (err) {
+				if (recordingStream) { recordingStream.getTracks().forEach(t => t.stop()); recordingStream = null; }
+				alert('无法访问麦克风，请检查浏览器权限设置');
+			} finally {
+				isRequestingMedia = false;
+				voiceBtn.disabled = false;
+			}
+		});
+
+		clearVoice.addEventListener('click', () => {
+			recordedVoice = null;
+			revokeVoiceUrl();
+			voicePreview.src = '';
+			voicePreviewWrap.style.display = 'none';
+			voiceBtnText.textContent = '语音留言';
+		});
+
+		// ============ 发布留言 ============
+		document.getElementById('submit-msg').addEventListener('click', async () => {
+			const name = document.getElementById('msg-name').value.trim();
+			const content = document.getElementById('msg-content').value.trim();
+			if (!content) { alert('留言内容不能为空'); return; }
+
+			const btn = document.getElementById('submit-msg');
+			btn.disabled = true;
+			btn.textContent = '发布中...';
+
+			const qq = document.getElementById('msg-qq').value.trim();
+			const fd = new FormData();
+			fd.append('name', name || '匿名访客');
+			fd.append('qq', qq);
+			fd.append('content', content);
+			if (selectedImage) fd.append('image', selectedImage);
+			if (recordedVoice) fd.append('voice', recordedVoice);
+
+			try {
+				const resp = await fetch('/api/messages.php', { method: 'POST', body: fd });
+				const contentType = resp.headers.get('content-type') || '';
+				let data = {};
+				if (contentType.includes('application/json')) {
+					data = await resp.json();
+				} else {
+					const text = await resp.text();
+					if (!resp.ok) {
+						alert('后端服务异常 (HTTP ' + resp.status + ')。请检查宝塔反向代理是否配置正确');
+						btn.disabled = false;
+						btn.textContent = '发 布 留 言';
+						return;
+					}
+				}
+				if (resp.ok) {
+					document.getElementById('msg-name').value = '';
+					document.getElementById('msg-content').value = '';
+					selectedImage = null;
+					imgPreview.style.display = 'none';
+					imgUpload.value = '';
+					recordedVoice = null;
+					revokeVoiceUrl();
+					voicePreview.src = '';
+					voicePreviewWrap.style.display = 'none';
+					voiceBtnText.textContent = '语音留言';
+					loadMessages();
+				} else {
+					alert(data.error || '发布失败');
+				}
+			} catch (err) {
+				alert('网络错误，发布失败');
+			} finally {
+				btn.disabled = false;
+				btn.textContent = '发 布 留 言';
+			}
+		});
+
+		// ============ 加载留言 ============
+		const avatarColors = ['#6c3ff5','#ff9b6b','#e8d754','#2d2d2d','#41d1ff','#bd34fe','#f76cc6','#52c41a'];
+		function getAvatarChar(name) { return (name || '?').charAt(0).toUpperCase(); }
+		function getAvatarColor(name) {
+			let h = 0; for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h<<5)-h);
+			return avatarColors[Math.abs(h) % avatarColors.length];
+		}
+		function formatTime(t) {
+			let d;
+			if (typeof t === 'number') d = new Date(t);
+			else if (typeof t === 'string') d = new Date(t.replace(/-/g, '/'));
+			else d = new Date();
+			const now = new Date();
+			const diff = now - d;
+			if (diff < 60000) return '刚刚';
+			if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+			if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+			if (diff < 604800000) return Math.floor(diff/86400000) + '天前';
+			return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+		}
+		function escapeHtml(s) {
+			return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+		}
+
+		async function loadMessages() {
+			const list = document.getElementById('msg-list');
+			list.innerHTML = '<div class="loading-tip">加载中...</div>';
+			try {
+				const resp = await fetch('/api/messages.php');
+				const contentType = resp.headers.get('content-type') || '';
+				if (!contentType.includes('application/json')) {
+					const text = await resp.text();
+					throw new Error('后端服务异常 (HTTP ' + resp.status + ')。请检查宝塔反向代理是否配置正确');
+				}
+				if (!resp.ok) throw new Error('服务器错误: ' + resp.status);
+				const msgs = await resp.json();
+				if (msgs.length === 0) {
+					list.innerHTML = '<div class="empty-tip">还没有留言，来抢个沙发吧~</div>';
+					return;
+				}
+				list.innerHTML = msgs.map(m => {
+					const ch = getAvatarChar(m.name);
+					const co = getAvatarColor(m.name);
+					let avatarHtml;
+					if (m.qq && /^\d{5,12}$/.test(m.qq)) {
+						avatarHtml = '<img class="msg-avatar" src="https://q1.qlogo.cn/g?b=qq&nk='+escapeHtml(m.qq)+'&s=100" style="object-fit:cover" />';
+					} else {
+						avatarHtml = '<div class="msg-avatar" style="background:'+co+'">'+escapeHtml(ch)+'</div>';
+					}
+					let html = '<div class="msg-item">';
+					html += '<div class="msg-meta">';
+					html += '<div class="msg-name">'+avatarHtml+escapeHtml(m.name)+'</div>';
+					html += '<div class="msg-time">'+formatTime(m.time || m.ts)+'</div>';
+					html += '</div>';
+					html += '<div class="msg-content">'+escapeHtml(m.content)+'</div>';
+					if (m.image) html += '<img class="msg-image" src="/uploads/'+m.image+'" onclick="openImg(this.src)" />';
+					if (m.voice) html += '<div class="msg-voice"><audio src="/uploads/'+m.voice+'" controls></audio></div>';
+					html += '</div>';
+					return html;
+				}).join('');
+			} catch (err) {
+				const msg = err.message && err.message.includes('后端') ? err.message : '加载失败，请刷新重试';
+				list.innerHTML = '<div class="empty-tip" style="color:#d97706">' + msg + '</div>';
+			}
+		}
+
+		// 图片大图
+		window.openImg = function(src) {
+			document.getElementById('img-modal-src').src = src;
+			document.getElementById('img-modal').classList.add('active');
+		};
+		document.getElementById('img-modal').addEventListener('click', function() {
+			this.classList.remove('active');
+		});
+
+		loadMessages();
+
+		// 访客统计
+		try { fetch('/api/visitor.php?path=' + encodeURIComponent(location.pathname)); } catch(e) {}
+
+		// 页面加载动画
+		var pageLoading = document.querySelector("#zmy-loading");
+		window.addEventListener('load', function() { setTimeout(function() { pageLoading.style.opacity = '0'; }, 100); });
+
+		// ============ 音乐播放器 ============
+		(function() {
+			const audio = document.createElement('audio');
+			audio.src = './背景乐.mp3';
+			audio.loop = true;
+			audio.volume = 0.5;
+			audio.preload = 'auto';
+			document.body.appendChild(audio);
+
+			const player = document.createElement('div');
+			player.style.cssText = 'position:fixed;bottom:80px;right:30px;z-index:9999;';
+			player.innerHTML = `
+				<div style="width:50px;height:50px;border-radius:50%;background:var(--item_bg_color);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(128,128,128,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--main_text_color);transition:all 0.3s;"
+					 onmouseover="this.style.transform='scale(1.1)'"
+					 onmouseout="this.style.transform='scale(1)'">
+					<svg id="music-icon-play" viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor;display:none"><path d="M572.9 243.2c-7.1-1.4-14.2-2-21.3-2-60.2 0-109.3 49.1-109.3 109.3v250.2c-12.8-7.6-27.1-12.1-42.7-12.1-60.2 0-109.3 49.1-109.3 109.3s49.1 109.3 109.3 109.3 109.3-49.1 109.3-109.3V372.1c0-36.2 29.3-65.5 65.5-65.5 7.1 0 14.2 1.1 21.3 3.2V243.2z"></path></svg>
+					<svg id="music-icon-pause" viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor"><path d="M349.749455 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863zM776.718909 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863z"></path></svg>
+				</div>`;
+			document.body.appendChild(player);
+
+			const playIcon = player.querySelector('#music-icon-play');
+			const pauseIcon = player.querySelector('#music-icon-pause');
+			let playing = false;
+
+			function toggle() {
+				if (playing) {
+					audio.pause();
+					playing = false;
+					playIcon.style.display = 'none';
+					pauseIcon.style.display = 'block';
+					localStorage.setItem('musicPlaying', 'false');
+				} else {
+					audio.play().then(() => {
+						playing = true;
+						playIcon.style.display = 'block';
+						pauseIcon.style.display = 'none';
+						localStorage.setItem('musicPlaying', 'true');
+					}).catch(() => {});
+				}
+			}
+			player.querySelector('div').addEventListener('click', toggle);
+
+			function tryPlay() {
+				if (localStorage.getItem('musicPlaying') === 'false') return;
+				audio.play().then(() => {
+					playing = true;
+					playIcon.style.display = 'block';
+					pauseIcon.style.display = 'none';
+				}).catch(() => {
+					const firstInteract = () => {
+						if (localStorage.getItem('musicPlaying') !== 'false') {
+							audio.play().then(() => {
+								playing = true;
+								playIcon.style.display = 'block';
+								pauseIcon.style.display = 'none';
+							}).catch(() => {});
+						}
+						document.removeEventListener('click', firstInteract);
+						document.removeEventListener('touchstart', firstInteract);
+					};
+					document.addEventListener('click', firstInteract, { once: true });
+					document.addEventListener('touchstart', firstInteract, { once: true });
+				});
+			}
+			tryPlay();
+		})();
+	</script>
+	<style>
+		@media (max-width: 768px) {
+			body > div[style*="bottom:80px"] { bottom: 60px !important; right: 20px !important; }
+			body > div[style*="bottom:80px"] > div { width: 40px !important; height: 40px !important; }
+			body > div[style*="bottom:80px"] svg { width: 20px !important; height: 20px !important; }
+		}
+	</style>
+</body>
+
+</html>
