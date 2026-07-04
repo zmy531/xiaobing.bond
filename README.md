@@ -1,4 +1,9 @@
-<img width="1171" height="1171" alt="wxzsm" src="https://github.com/user-attachments/assets/bbf57a1a-9aa0-40df-9a7e-94d6ec9ef308" />
+部分页面展示图
+移动端 <img width="1220" height="2187" alt="Screenshot_2026-07-04-16-52-59-875_com android browser-edit" src="https://github.com/user-attachments/assets/41368349-4b76-468f-b07f-5647c3dbf21c" />
+
+
+桌面端<img width="2218" height="1422" alt="屏幕截图 2026-07-04 165232" src="https://github.com/user-attachments/assets/34b47a00-b138-44b2-b142-e1eb29302e44" />
+
 个人学习使用，请勿用于商业用途。
 
 参考网页：xiaobing.bond
@@ -592,3 +597,7 @@ chown -R www:www /www/wwwroot/你的域名/data
 接口编写@By-zmy(作者)
 前端开发设计@By-zmy (作者)      @By-TRAE (AI)      @By-Gemini (AI)
 后端程序编写@By-TRAE (AI)
+
+##投喂
+<img width="1171" height="1171" alt="wxzsm" src="https://github.com/user-attachments/assets/f0fe117c-0df5-454b-a6d0-171c1dd3c10b" />
+
