@@ -1,0 +1,16 @@
+{
+  "name": "xiaobing-personal-server",
+  "version": "1.0.0",
+  "description": "个人主页后端服务 - 登录认证、访客IP记录、留言板",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
