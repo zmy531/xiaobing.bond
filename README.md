@@ -1,5 +1,5 @@
 # ✨ 个人主页系统 · Personal Homepage
-在线预览请访问：xiaobing.bond
+在线预览请访问：https://xiaobing.bond
 部署教程查看https://xiaobing.bond/about.html
 一个功能丰富、界面美观的**一站式个人主页源码**，包含首页 / 商城 / 相册 / 软件库 / 工具查询 / 留言板 / AI 助手 / 粒子特效 / 联系页面 等多个模块，开箱即用，无需数据库，JSON 文件本地存储。
 
