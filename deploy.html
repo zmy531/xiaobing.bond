@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="description" content="个人主页系统 - 部署教程">
+<title>部署教程 · 个人主页</title>
+<link rel="icon" href="static/img/favicon.ico">
+<link rel="stylesheet" href="static/css/root.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu-Regular', Pacifico-Regular, 'Microsoft YaHei', sans-serif; color: #1e293b; overflow-x: hidden; }
+  body {
+    min-height: 100vh;
+    background-image: url('static/img/background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-color: #f0f4ff;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(124,58,237,0.12), rgba(236,72,153,0.12));
+    z-index: -1;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 20px 80px; }
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 18px; border-radius: 999px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(128,128,128,0.2);
+    color: #1e293b; text-decoration: none; font-size: 14px; font-weight: 500;
+    margin-bottom: 28px; transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .back-btn:hover { transform: translateX(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+
+  .glass-card {
+    background: rgba(255,255,255,0.58);
+    backdrop-filter: blur(26px);
+    -webkit-backdrop-filter: blur(26px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 28px;
+    padding: 32px 36px;
+    box-shadow: 0 20px 60px rgba(30,41,59,0.12);
+    margin-bottom: 24px;
+  }
+  .hero { text-align: center; padding: 48px 36px; }
+  .hero-icon { font-size: 60px; margin-bottom: 14px; display: inline-block; }
+  .hero-title {
+    font-size: 36px; font-weight: 700;
+    background: linear-gradient(135deg, #3b82f6, #7c3aed, #ec4899);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 10px;
+  }
+  .hero-sub { font-size: 15px; color: #64748b; line-height: 1.8; max-width: 620px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 22px; font-weight: 600; margin-bottom: 18px;
+    color: var(--item_left_title_color);
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2.section-title::before {
+    content: ''; width: 5px; height: 22px;
+    background: linear-gradient(135deg, #3b82f6, #7c3aed);
+    border-radius: 3px;
+  }
+
+  /* 环境要求网格 */
+  .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 14px; }
+  .req {
+    padding: 18px; border-radius: 16px;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(128,128,128,0.12);
+  }
+  .req-emoji { font-size: 28px; display: block; margin-bottom: 8px; }
+  .req-name { font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
+  .req-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+  /* 选项卡 Tab */
+  .tabs {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 6px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 16px;
+    border: 1px solid rgba(128,128,128,0.15);
+  }
+  .tab-btn {
+    flex: 1; min-width: 160px;
+    padding: 12px 18px;
+    border: none; background: transparent;
+    border-radius: 12px;
+    font-size: 14px; font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .2s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .tab-btn:hover { background: rgba(124,58,237,0.08); color: #6d28d9; }
+  .tab-btn.active {
+    background: linear-gradient(135deg, #3b82f6, #7c3aed);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(124,58,237,0.35);
+  }
+  .tab-pane { display: none; animation: fade .35s ease; }
+  .tab-pane.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+  /* 步骤 */
+  .steps { display: flex; flex-direction: column; gap: 16px; }
+  .step {
+    display: grid; grid-template-columns: 60px 1fr; gap: 18px; align-items: flex-start;
+    padding: 20px;
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(128,128,128,0.12);
+    border-radius: 18px;
+    transition: transform .2s ease;
+  }
+  .step:hover { transform: translateX(4px); }
+  .step-num {
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #3b82f6, #7c3aed);
+    color: #fff;
+    font-size: 22px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 14px rgba(59,130,246,0.35);
+  }
+  .step-title { font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 6px; }
+  .step-body { font-size: 14px; color: #475569; line-height: 1.9; }
+  .step-body code, .inline-code {
+    background: #0f172a; color: #e2e8f0;
+    padding: 2px 8px; border-radius: 6px;
+    font-family: 'Consolas','Monaco',monospace;
+    font-size: 12.5px;
+    display: inline-block;
+    margin: 2px 0;
+  }
+  .code-block {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin: 10px 0;
+    font-family: 'Consolas','Monaco',monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+  .code-block .c-cmd { color: #34d399; }
+  .code-block .c-cmt { color: #64748b; }
+  .code-block .c-url { color: #60a5fa; }
+  .code-block .c-path { color: #fbbf24; }
+
+  /* 提示框 */
+  .tip {
+    padding: 16px 20px;
+    border-radius: 14px;
+    margin: 14px 0;
+    font-size: 13.5px;
+    line-height: 1.8;
+  }
+  .tip.info { background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(14,165,233,0.08)); color: #1e40af; border: 1px solid rgba(59,130,246,0.25); }
+  .tip.warn { background: linear-gradient(135deg, rgba(245,158,11,0.14), rgba(239,68,68,0.08)); color: #92400e; border: 1px dashed rgba(245,158,11,0.4); }
+  .tip.ok { background: linear-gradient(135deg, rgba(16,185,129,0.14), rgba(5,150,105,0.08)); color: #065f46; border: 1px solid rgba(16,185,129,0.28); }
+  .tip b { font-weight: 600; }
+
+  /* FAQ 手风琴 */
+  .faq { margin-top: 10px; }
+  .faq-item {
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(128,128,128,0.12);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .faq-q {
+    padding: 16px 20px;
+    font-size: 14.5px; font-weight: 600; color: #1e293b;
+    cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    user-select: none;
+    transition: background .2s ease;
+  }
+  .faq-q:hover { background: rgba(124,58,237,0.06); }
+  .faq-q::after {
+    content: '＋';
+    font-size: 20px; color: #94a3b8;
+    transition: transform .25s ease;
+  }
+  .faq-item.open .faq-q::after { transform: rotate(45deg); color: #7c3aed; }
+  .faq-a {
+    max-height: 0; overflow: hidden;
+    transition: max-height .35s ease;
+    padding: 0 20px;
+    font-size: 14px; color: #475569;
+    line-height: 1.9;
+  }
+  .faq-item.open .faq-a { max-height: 500px; padding: 0 20px 18px; }
+
+  .perm-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  .perm-table th, .perm-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(128,128,128,0.12); }
+  .perm-table th { background: rgba(124,58,237,0.08); color: #6d28d9; font-weight: 600; }
+  .perm-table tr:last-child td { border-bottom: none; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 28px 14px 60px; }
+    .glass-card { padding: 22px; border-radius: 22px; }
+    .hero { padding: 32px 18px; }
+    .hero-title { font-size: 26px; }
+    .step { grid-template-columns: 48px 1fr; gap: 12px; padding: 16px; }
+    .step-num { width: 42px; height: 42px; font-size: 18px; border-radius: 12px; }
+    .tabs { flex-direction: column; }
+    .tab-btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back-btn" href="index.html">← 返回首页</a>
+
+  <!-- Hero -->
+  <div class="glass-card hero">
+    <span class="hero-icon">🚀</span>
+    <div class="hero-title">部署教程</div>
+    <div class="hero-sub">
+      只需要 PHP + 目录写入权限，无需数据库。<br>
+      从本地预览到上线，最快 2 分钟搞定 ✅
+    </div>
+  </div>
+
+  <!-- 环境要求 -->
+  <div class="glass-card">
+    <h2 class="section-title">📦 环境要求</h2>
+    <div class="req-grid">
+      <div class="req"><span class="req-emoji">🐘</span><div class="req-name">PHP 版本</div><div class="req-desc">≥ 7.4（推荐 8.0 / 8.1）无需 PDO / MySQL 等扩展</div></div>
+      <div class="req"><span class="req-emoji">💾</span><div class="req-name">存储方式</div><div class="req-desc">JSON 文件本地存储 <b>无需 MySQL 数据库</b></div></div>
+      <div class="req"><span class="req-emoji">📁</span><div class="req-name">写入权限</div><div class="req-desc"><code>data/</code> 和 <code>uploads/</code> 目录可写</div></div>
+      <div class="req"><span class="req-emoji">🌐</span><div class="req-name">服务器</div><div class="req-desc">Nginx / Apache / IIS / PHP 内置服务器 任意都可以</div></div>
+    </div>
+    <div class="tip info">
+      <b>💡 零依赖：</b>项目所有静态资源（CSS/JS/字体/图标/默认图）都内置在 <code>static/</code> 目录，
+      没有任何外部 CDN 或外部脚本，离线 / 内网环境也能完美运行。
+    </div>
+  </div>
+
+  <!-- 部署方案 -->
+  <div class="glass-card">
+    <h2 class="section-title">🛫 选择你的部署方式</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-local',this)">🖥 本地预览 · 2分钟</button>
+      <button class="tab-btn" onclick="switchTab('tab-bt',this)">🗼 宝塔面板 · 推荐</button>
+      <button class="tab-btn" onclick="switchTab('tab-vh',this)">📮 虚拟主机/空间</button>
+    </div>
+
+    <!-- 方案一：本地 -->
+    <div class="tab-pane active" id="tab-local">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">安装 PHP（如果没有）</div>
+            <div class="step-body">
+              Windows 用户建议安装 <b>phpStudy 小皮面板</b> 或单独下载 PHP（<a href="https://windows.php.net/download" target="_blank">官网</a>）。<br>
+              macOS / Linux 通常自带或通过 <code>brew install php</code> / <code>apt install php-cli</code> 安装。
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">打开终端，进入项目目录启动内置服务器</div>
+            <div class="step-body">
+              <div class="code-block">
+<span class="c-cmt"># Windows PowerShell / CMD</span><br>
+<span class="c-cmd">cd</span> <span class="c-path">C:\Users\你的名字\Desktop\个人主页上传即用</span><br>
+<span class="c-cmd">php -S</span> 127.0.0.1:8080<br>
+<br>
+<span class="c-cmt"># macOS / Linux</span><br>
+<span class="c-cmd">cd</span> <span class="c-path">~/Desktop/personal-homepage</span><br>
+<span class="c-cmd">php -S</span> 127.0.0.1:8080
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">浏览器打开即可预览</div>
+            <div class="step-body">
+              前台首页：<a class="inline-code" href="http://127.0.0.1:8080/" target="_blank">http://127.0.0.1:8080/</a><br>
+              后台登录：<span class="inline-code">http://127.0.0.1:8080/admin.html</span><br>
+              默认账号：<b>admin / admin</b>
+              <div class="tip warn">
+                <b>⚠️ 重要：</b>php -S 是 <b>开发用服务器</b>，仅供本地预览，<b>请勿用于生产环境公网部署</b>。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方案二：宝塔 -->
+    <div class="tab-pane" id="tab-bt">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">宝塔面板 → 网站 → 添加站点</div>
+            <div class="step-body">
+              域名：填你的域名（例如 <code>home.example.com</code>）<br>
+              根目录：默认即可，例如 <code>/www/wwwroot/home.example.com</code><br>
+              PHP 版本：选择 <b>7.4 或更高</b>（8.x 最佳）<br>
+              数据库：<b>不创建</b>（本项目不需要数据库）<br>
+              <div class="tip info">如果只是测试玩玩，没有域名可以先用宝塔的 <b>IP:端口</b> 方式访问。</div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">上传项目文件到网站根目录</div>
+            <div class="step-body">
+              方式 A：宝塔 <b>文件管理</b> → 进入根目录 → <b>上传压缩包（zip）</b> → 解压<br>
+              方式 B：使用 <b>FTP / SCP / SFTP</b> 上传所有文件到根目录<br>
+              <div class="tip ok">
+                <b>✅ 正确结果：</b>根目录下能直接看到 <code>index.html</code>、<code>api/</code>、<code>static/</code> 等文件夹，<b>不是嵌套一层文件夹！</b>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">设置目录权限（重要！否则上传会失败）</div>
+            <div class="step-body">
+              在宝塔文件管理器，选中 <b>data/</b> 和 <b>uploads/</b> 两个目录（按住 Ctrl 多选）→ 右键 <b>权限</b> → 设置为 <b>755</b>，所有者 <code>www</code>。<br>
+              如果仍上传失败，可临时设为 <b>777</b> 测试，确认是权限问题后再改回 755。
+              <table class="perm-table" style="margin-top:14px">
+                <tr><th>目录</th><th>权限</th><th>作用</th></tr>
+                <tr><td><code>data/</code></td><td>755</td><td>所有 JSON 数据写入（配置、留言、订单等）</td></tr>
+                <tr><td><code>uploads/</code></td><td>755</td><td>头像、背景、收款码、商品图、相册上传</td></tr>
+                <tr><td><code>data/software_files/</code></td><td>755</td><td>软件库二进制文件上传</td></tr>
+                <tr><td>其他所有文件</td><td>644 / 755</td><td>默认即可，不需要写权限</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-title">申请 SSL 证书（强烈推荐，开 HTTPS）</div>
+            <div class="step-body">
+              宝塔 → 站点设置 → <b>SSL</b> → Let's Encrypt 一键申请，然后开启 <b>强制 HTTPS</b>。<br>
+              小程序 / AI 接口 / 支付回调 通常都需要 HTTPS 才能正常工作。
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div>
+            <div class="step-title">部署后第一件事：修改默认密码！</div>
+            <div class="step-body">
+              打开网站文件 <code>api/login.php</code>，修改前 3 行：
+              <div class="code-block">
+<span class="c-cmt">// 默认账号密码 —— 请立即修改！！</span><br>
+define(<span class="c-path">'ADMIN_USER'</span>, <span class="c-path">'admin'</span>);        <span class="c-cmt">// ← 改成你的用户名</span><br>
+define(<span class="c-path">'ADMIN_PASS'</span>, <span class="c-path">'admin'</span>);        <span class="c-cmt">// ← 改成强密码</span><br>
+define(<span class="c-path">'JWT_SECRET'</span>, <span class="c-path">'personal_homepage_default_jwt_secret_change_me'</span>);  <span class="c-cmt">// ← 改成随机长字符串</span>
+              </div>
+              改完访问 <code>https://你的域名/admin.html</code> 用新账号登录即可。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方案三：虚拟主机 -->
+    <div class="tab-pane" id="tab-vh">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">确认主机支持 PHP</div>
+            <div class="step-body">
+              购买 <b>Linux 虚拟主机 / PHP 空间</b>，要求：
+              <ul style="margin: 10px 0 10px 22px">
+                <li>PHP ≥ 7.4</li>
+                <li>支持 <code>move_uploaded_file</code>（一般都支持，除非极特殊锁权限的主机）</li>
+                <li>支持 <code>file_get_contents / file_put_contents</code> 读写本地文件</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">FTP 上传到根目录（wwwroot / htdocs / public_html）</div>
+            <div class="step-body">
+              使用 FileZilla 等 FTP 软件把整个项目上传到主机的网站根目录，<b>不要嵌套子文件夹</b>。
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">控制面板 → 修改目录属性</div>
+            <div class="step-body">
+              在主机控制面板，把 <code>data/</code> 和 <code>uploads/</code> 目录设置为 <b>755 或 可读可写</b>（有些面板叫 "写入权限" 直接打勾）。
+              <div class="tip warn">
+                <b>⚠️ 国内虚拟主机常见问题：</b> 如果后台登录提示 500 或 "Unauthorized"，多半是 <code>HTTP_AUTHORIZATION</code> 没有被 Nginx/Apache 转发。
+                解决方案见下方 FAQ。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 目录权限 & 伪静态 -->
+  <div class="glass-card">
+    <h2 class="section-title">⚙️ 部署后必做配置</h2>
+
+    <div class="tip warn" style="margin-top:0">
+      <b>🔑 安全三件套（公网部署必改）：</b><br>
+      ① 修改 <code>api/login.php</code> 的 <b>默认账号密码</b><br>
+      ② 修改同一文件里的 <b>JWT_SECRET</b> 为 32 位以上随机字符串<br>
+      ③ <b>开启 HTTPS</b>（避免明文传输 token）
+    </div>
+
+    <div style="margin-top: 20px">
+      <h3 style="font-size:16px;margin: 0 0 10px;color:#1e293b">① 伪静态 / Nginx 配置（可选）</h3>
+      <div class="step-body">
+        项目的入口都是 <code>xxx.html</code> 和 <code>api/xxx.php</code>，<b>不需要任何伪静态规则</b>，默认就能跑。<br>
+        如果你的 Nginx 开启了 pathinfo 或防跨域限制导致 PHP 接口报 404 / 403，在站点配置里加一段：
+        <div class="code-block">
+<span class="c-cmt"># Nginx - 兼容 Authorization header（JWT登录用）</span><br>
+<span class="c-cmd">add_header</span> Access-Control-Allow-Origin <span class="c-path">"$http_origin"</span> always;<br>
+<span class="c-cmd">add_header</span> Access-Control-Allow-Methods <span class="c-path">"GET,POST,OPTIONS"</span> always;<br>
+<span class="c-cmd">add_header</span> Access-Control-Allow-Headers <span class="c-path">"Content-Type,Authorization"</span> always;<br>
+<span class="c-cmt"># 关键：让 Authorization 头传递给 PHP（虚拟主机常见缺失）</span><br>
+<span class="c-cmd">fastcgi_param</span> HTTP_AUTHORIZATION <span class="c-path">$http_authorization</span>;
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px">
+      <h3 style="font-size:16px;margin:0 0 10px;color:#1e293b">② Apache / .htaccess（可选）</h3>
+      <div class="step-body">
+        Apache 虚拟主机通常需要开启 <code>mod_headers</code> 和 <code>mod_rewrite</code>，如果登录 401，在根目录新建 <code>.htaccess</code>：
+        <div class="code-block">
+<span class="c-cmt"># .htaccess</span><br>
+<span class="c-cmd">RewriteEngine</span> On<br>
+<span class="c-cmd">SetEnvIf</span> Authorization .+ HTTP_AUTHORIZATION=$0<br>
+<span class="c-cmd">Header</span> always set Access-Control-Allow-Origin <span class="c-path">"*"</span><br>
+<span class="c-cmd">Header</span> always set Access-Control-Allow-Methods <span class="c-path">"GET,POST,OPTIONS"</span><br>
+<span class="c-cmd">Header</span> always set Access-Control-Allow-Headers <span class="c-path">"Content-Type,Authorization"</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 常见问题 -->
+  <div class="glass-card">
+    <h2 class="section-title">❓ 常见问题 FAQ</h2>
+    <div class="faq">
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">打开页面显示 500 错误 / 空白？</div>
+        <div class="faq-a">
+          <p>90% 是 <b>PHP 版本太低</b>或<b>语法错误</b>。检查方法：</p>
+          <ul style="margin:8px 0 8px 22px">
+            <li>宝塔：网站 → 设置 → PHP版本 ≥ 7.4</li>
+            <li>直接访问 <code>/api/profile.php?action=get</code>，看报错信息，通常会告诉你哪一行错了</li>
+            <li>极少数虚拟主机禁用了 JSON 函数，换用 PHP 8+ 即可</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">后台登录不上？输入admin/admin提示401或Unauthorized？</div>
+        <div class="faq-a">
+          <p>原因：<b>Nginx/Apache 没有把 Authorization 请求头传递给 PHP</b>（虚拟主机最常见）。</p>
+          <p>解决：</p>
+          <ul style="margin:8px 0 8px 22px">
+            <li>Nginx 站点配置里加：<code>fastcgi_param HTTP_AUTHORIZATION $http_authorization;</code> 然后重载</li>
+            <li>Apache 在 .htaccess 加：<code>SetEnvIf Authorization .+ HTTP_AUTHORIZATION=$0</code></li>
+            <li>或者直接改 <code>api/login.php</code>、<code>api/profile.php</code> 顶部的 <code>authenticate()</code> 函数，兼容用 GET 参数 <code>?token=</code>（项目自带 <code>authUrl()</code> 已经支持）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">后台上传头像/背景/商品图 都失败？</div>
+        <div class="faq-a">
+          <p>100% 是 <b>目录没有写入权限</b>：</p>
+          <ul style="margin:8px 0 8px 22px">
+            <li>宝塔：把 <code>data/</code> 和 <code>uploads/</code> 权限设为 755，所有者 www</li>
+            <li>虚拟主机：控制面板把这两个目录改成「可读可写」</li>
+            <li>上传大小不足：修改 php.ini 里的 <code>upload_max_filesize = 32M</code>、<code>post_max_size = 32M</code>、<code>memory_limit = 256M</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">contact.html 上传了自定义 HTML 不生效？</div>
+        <div class="faq-a">
+          <p>按顺序排查：</p>
+          <ol style="margin:8px 0 8px 22px">
+            <li>后台「联系设置」Tab 底部，右下角有没有显示 <span style="color:#10b981;font-weight:600">✅ 已上传HTML文件 (xxx 字节)</span>？如果没有说明上传没成功（参考上一条权限问题）。</li>
+            <li>点「👁 预览效果」会直接打开 <code>uploads/contact_custom.html</code>，看这个文件是否是你上传的内容（是 → 写入成功）。</li>
+            <li>再打开 <code>contact.html</code>，如果仍显示默认卡片：<b>强制刷新 Ctrl+F5</b> 或清除浏览器缓存（框架里有 Date.now() 时间戳，通常不会缓存）。</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">首页背景 / 音乐不显示？</div>
+        <div class="faq-a">
+          <p>背景图默认读取的是 <code>static/img/background.jpg</code>，如果你的文件不存在会 fallback 到纯色渐变。</p>
+          <p>音乐文件要放在 <code>music/</code> 目录，必须是 <b>.mp3 同名 + .lrc 歌词</b>（歌词可以没有但要有mp3）。</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">上传到 GitHub 后，clone 下来会不会丢失商品？</div>
+        <div class="faq-a">
+          <p>不会。项目自带的 <code>.gitignore</code> 只忽略<b>个人上传类</b>目录（头像/背景/收款码/相册/音乐/软件二进制），以下内容会被 Git 保留：</p>
+          <ul style="margin:8px 0 8px 22px">
+            <li>✅ 商品数据：<code>data/shop/products.json</code></li>
+            <li>✅ 商品图片：<code>uploads/shop/*</code></li>
+            <li>✅ 软件列表：<code>data/software.json</code></li>
+            <li>✅ 所有源码 / 默认图 / 字体 / SVG 图标</li>
+          </ul>
+          <p>⚠️ 软件二进制文件 <code>data/software_files/*</code> 默认忽略，如需分发请自行添加或单独打包。</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">默认密码改完之后登录不上？</div>
+        <div class="faq-a">
+          <p>请在 <b>无痕模式</b> 下重新登录，或清除浏览器缓存（LocalStorage 里保存了旧的 token）。</p>
+          <p>确认 <code>api/login.php</code> 前两行：<code>ADMIN_USER</code> 和 <code>ADMIN_PASS</code> 是你想要的值，字符串闭合正确，没有多余引号。</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">能不能绑定到二级目录？比如域名/blog/</div>
+        <div class="faq-a">
+          <p>可以，但需要把所有 HTML 里的静态资源路径前缀（<code>./static/</code>、<code>./api/</code>）改成相对路径或正确子目录路径，工作量略大，推荐直接用子域名部署。</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="glass-card" style="text-align:center">
+    <h2 class="section-title" style="justify-content:center">🌟 部署顺利！</h2>
+    <p style="color:#64748b;font-size:14px;line-height:1.8;margin-bottom:20px">
+      如果在部署中遇到问题，先看 FAQ。仍不能解决？查看项目介绍了解模块设计。
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="action-btn" href="about.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;background:rgba(255,255,255,0.85);color:#1e293b;border:1px solid rgba(128,128,128,0.2);font-weight:600;text-decoration:none">📖 关于项目</a>
+      <a class="action-btn" href="admin.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#7c3aed);color:#fff;box-shadow:0 8px 22px rgba(59,130,246,0.35);font-weight:600;text-decoration:none">🔑 进入后台</a>
+      <a class="action-btn" href="index.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:14px;background:rgba(255,255,255,0.85);color:#1e293b;border:1px solid rgba(128,128,128,0.2);font-weight:600;text-decoration:none">🏠 查看首页</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+function toggleFaq(el) {
+  const parent = el.parentElement;
+  const wasOpen = parent.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(it => it.classList.remove('open'));
+  if (!wasOpen) parent.classList.add('open');
+}
+</script>
+</body>
+</html>

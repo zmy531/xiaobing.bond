@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>瓯江三月 - 文字剧情游戏</title>
+    <link rel="icon" href="./static/img/favicon.ico">
+    <link rel="stylesheet" href="./static/css/game.css?v=20260706_2">
+</head>
+<body>
+    <!-- 背景装饰 -->
+    <div class="game-background">
+        <div class="river-flow"></div>
+        <div class="mist"></div>
+        <div class="fireflies"></div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="game-container">
+        <!-- 顶部导航 -->
+        <header class="game-header">
+            <div class="header-left">
+                <a href="./index.html" class="back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    返回首页
+                </a>
+            </div>
+            <h1 class="game-title">瓯江三月</h1>
+            <div class="header-right">
+                <button class="mode-switch" id="modeSwitch">
+                    <span class="mode-icon">📖</span>
+                    <span class="mode-text">阅读模式</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- 游戏模式 -->
+        <main class="game-mode" id="gameMode">
+            <!-- 章节导航 -->
+            <nav class="chapter-nav" id="chapterNav">
+                <div class="chapter-nav-content">
+                    <button class="nav-btn prev-btn" id="prevChapter">上一章</button>
+                    <span class="current-chapter" id="currentChapter">序章</span>
+                    <button class="nav-btn next-btn" id="nextChapter">下一章</button>
+                </div>
+            </nav>
+
+            <!-- 剧情显示区 -->
+            <section class="story-area">
+                <!-- 信纸容器 -->
+                <div class="letter-paper">
+                    <div class="letter-decoration top-left"></div>
+                    <div class="letter-decoration top-right"></div>
+                    <div class="letter-decoration bottom-left"></div>
+                    <div class="letter-decoration bottom-right"></div>
+                    <div class="stamp">瓯江</div>
+
+                    <div class="story-content" id="storyContent">
+                        <p class="story-text">故事加载中...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 选项区 -->
+            <section class="options-area" id="optionsArea">
+                <div class="options-container" id="optionsContainer">
+                    <!-- 选项动态生成 -->
+                </div>
+            </section>
+
+            <!-- 底部状态栏 -->
+            <footer class="status-bar">
+                <!-- 道具栏 -->
+                <div class="items-bar">
+                    <div class="items-label">道具</div>
+                    <div class="items-container" id="itemsContainer">
+                        <!-- 道具动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 好感度 -->
+                <div class="affection-bar">
+                    <div class="affection-label">好感度</div>
+                    <div class="affection-hearts" id="affectionHearts">
+                        <!-- 心形动态生成 -->
+                    </div>
+                    <span class="affection-value" id="affectionValue">0</span>
+                </div>
+
+                <!-- 存档按钮 -->
+                <div class="save-bar">
+                    <button class="save-btn" id="saveBtn">💾 存档</button>
+                    <button class="load-btn" id="loadBtn">📂 读档</button>
+                </div>
+            </footer>
+        </main>
+
+        <!-- 阅读模式 -->
+        <main class="novel-mode" id="novelMode" style="display: none;">
+            <!-- 小说目录 -->
+            <nav class="novel-nav">
+                <select id="novelChapterSelect">
+                    <option value="0">第一章：相遇</option>
+                    <option value="1">第二章：相知</option>
+                    <option value="2">第三章：离别</option>
+                    <option value="3">第四章：思念</option>
+                    <option value="4">第五章：重逢</option>
+                    <option value="5">第六章：结局</option>
+                </select>
+            </nav>
+
+            <!-- 小说内容区 -->
+            <section class="novel-area">
+                <div class="novel-paper">
+                    <div class="novel-title" id="novelTitle">第一章：相遇</div>
+                    <div class="novel-content" id="novelContent">
+                        <!-- 小说内容动态加载 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 阅读进度 -->
+            <div class="reading-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="readingProgress"></div>
+                </div>
+                <span class="progress-text" id="progressText">0%</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- 存档弹窗 -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>游戏存档</h3>
+                <button class="modal-close" onclick="closeModal('saveModal')">×</button>
+            </div>
+            <div class="modal-body" id="saveSlots">
+                <!-- 存档槽位动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 结局弹窗 -->
+    <div class="modal" id="endingModal">
+        <div class="modal-content ending-content">
+            <div class="ending-decoration">
+                <div class="ending-flower"></div>
+                <div class="ending-flower"></div>
+                <div class="ending-flower"></div>
+            </div>
+            <h2 class="ending-title" id="endingTitle">结局达成</h2>
+            <p class="ending-description" id="endingDescription"></p>
+            <div class="ending-stats" id="endingStats"></div>
+            <button class="ending-btn" onclick="restartGame()">重新开始</button>
+        </div>
+    </div>
+
+    <!-- 道具提示 -->
+    <div class="item-toast" id="itemToast">
+        <span class="toast-icon"></span>
+        <span class="toast-text"></span>
+    </div>
+
+    <script src="./static/js/game.js?v=20260706_2"></script>
+</body>
+</html>

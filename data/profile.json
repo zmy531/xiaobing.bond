@@ -1,0 +1,20 @@
+{
+  "avatar": "",
+  "registerDate": "",
+  "notice": "",
+  "contact": {
+    "qq": "",
+    "wechat": "",
+    "email": "",
+    "telegram": ""
+  },
+  "background": "",
+  "backgrounds": [],
+  "notice_box": {
+    "enabled": true,
+    "title": "有话对你说",
+    "content": "欢迎来到我的个人主页，很高兴你能来这里做客！"
+  },
+  "pay_wx_qr": "",
+  "pay_zfb_qr": ""
+}

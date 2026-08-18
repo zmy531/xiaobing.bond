@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="description" content="个人主页系统 - 项目介绍">
+<title>关于 · 个人主页</title>
+<link rel="icon" href="static/img/favicon.ico">
+<link rel="stylesheet" href="static/css/root.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu-Regular', Pacifico-Regular, 'Microsoft YaHei', sans-serif; color: #1e293b; overflow-x: hidden; }
+  body {
+    min-height: 100vh;
+    background-image: url('static/img/background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-color: #f0f4ff;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(236,72,153,0.1), rgba(59,130,246,0.15));
+    z-index: -1;
+  }
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(128,128,128,0.2);
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 28px;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .back-btn:hover { transform: translateX(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+
+  .glass-card {
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 28px;
+    padding: 36px;
+    box-shadow: 0 20px 60px rgba(30,41,59,0.12);
+    margin-bottom: 24px;
+  }
+
+  .hero { text-align: center; padding: 48px 36px; }
+  .hero-icon { font-size: 64px; margin-bottom: 16px; display: inline-block; animation: floaty 3.2s ease-in-out infinite; }
+  @keyframes floaty { 0%,100%{ transform: translateY(0) rotate(-2deg); } 50%{ transform: translateY(-8px) rotate(2deg); } }
+  .hero-title {
+    font-size: 40px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #7c3aed, #ec4899, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 10px;
+  }
+  .hero-sub { font-size: 16px; color: #64748b; line-height: 1.7; max-width: 620px; margin: 0 auto; }
+
+  h2.section-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: var(--item_left_title_color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2.section-title::before {
+    content: '';
+    width: 5px;
+    height: 22px;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    border-radius: 3px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .feature {
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(128,128,128,0.12);
+    border-radius: 18px;
+    padding: 20px;
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .feature:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(30,41,59,0.08); }
+  .feature-emoji { font-size: 32px; display: block; margin-bottom: 10px; }
+  .feature-name { font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 6px; }
+  .feature-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+  .tech-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .tech-tag {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(59,130,246,0.08));
+    color: #6d28d9;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid rgba(124,58,237,0.18);
+  }
+  .tech-tag.pink { background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(244,114,182,0.08)); color: #be185d; border-color: rgba(236,72,153,0.2); }
+  .tech-tag.green { background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.08)); color: #047857; border-color: rgba(16,185,129,0.2); }
+  .tech-tag.blue { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(14,165,233,0.08)); color: #1d4ed8; border-color: rgba(59,130,246,0.2); }
+  .tech-tag.orange { background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.08)); color: #b45309; border-color: rgba(245,158,11,0.2); }
+
+  .structure {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 14px;
+    padding: 20px 22px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+  .structure .c1 { color: #a78bfa; }
+  .structure .c2 { color: #34d399; }
+  .structure .c3 { color: #fbbf24; }
+  .structure .c4 { color: #f87171; }
+
+  .action-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .action-btn.primary { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; box-shadow: 0 8px 22px rgba(124,58,237,0.35); }
+  .action-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(124,58,237,0.45); }
+  .action-btn.secondary { background: rgba(255,255,255,0.8); color: #1e293b; border: 1px solid rgba(128,128,128,0.2); }
+  .action-btn.secondary:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,0.08); }
+
+  .warn-box {
+    background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(239,68,68,0.08));
+    border: 1px dashed rgba(245,158,11,0.35);
+    border-radius: 16px;
+    padding: 18px 22px;
+    margin-top: 16px;
+    font-size: 14px;
+    color: #92400e;
+    line-height: 1.8;
+  }
+  .warn-box b { color: #b45309; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 28px 14px 60px; }
+    .glass-card { padding: 22px; border-radius: 22px; }
+    .hero { padding: 32px 18px; }
+    .hero-title { font-size: 28px; }
+    .feature-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back-btn" href="index.html">← 返回首页</a>
+
+  <!-- Hero -->
+  <div class="glass-card hero">
+    <span class="hero-icon">🌌</span>
+    <div class="hero-title">Personal Homepage</div>
+    <div class="hero-sub">
+      一个功能齐全、开箱即用的个人主页系统 —— 从展示、互动、变现到娱乐全部内置。<br>
+      无需数据库，纯 PHP + JSON，部署只需上传文件 ✨
+    </div>
+    <div class="action-row" style="justify-content:center">
+      <a class="action-btn primary" href="deploy.html">📖 查看部署教程</a>
+      <a class="action-btn secondary" href="admin.html">🔑 登录后台</a>
+      <a class="action-btn secondary" target="_blank" href="README.md">📄 README.md</a>
+    </div>
+  </div>
+
+  <!-- 功能特色 -->
+  <div class="glass-card">
+    <h2 class="section-title">🧩 功能模块</h2>
+    <div class="feature-grid">
+      <div class="feature"><span class="feature-emoji">🏠</span><div class="feature-name">首页展示</div><div class="feature-desc">个人介绍、联系卡片、公告栏、背景图/头像自定义</div></div>
+      <div class="feature"><span class="feature-emoji">🛒</span><div class="feature-name">自助商城</div><div class="feature-desc">商品发布 + 卡密自动发货 + 订单管理 + 收款码配置</div></div>
+      <div class="feature"><span class="feature-emoji">📷</span><div class="feature-name">照片相册</div><div class="feature-desc">图片轮播、多种过渡特效、批量上传照片墙</div></div>
+      <div class="feature"><span class="feature-emoji">📦</span><div class="feature-name">软件仓库</div><div class="feature-desc">软件发布、版本管理、下载统计、卡密授权下载</div></div>
+      <div class="feature"><span class="feature-emoji">🛠</span><div class="feature-name">在线工具</div><div class="feature-desc">手机归属地 / IP详情 / QQ资料 / 身份证 / 抖音 等多接口聚合</div></div>
+      <div class="feature"><span class="feature-emoji">💬</span><div class="feature-name">留言互动</div><div class="feature-desc">访客留言板 + 访问统计 + IP归属地 + UA识别</div></div>
+      <div class="feature"><span class="feature-emoji">🤖</span><div class="feature-name">AI 助手</div><div class="feature-desc">本地问答库 + 兼容 OpenAI 接口的大模型双模式</div></div>
+      <div class="feature"><span class="feature-emoji">💫</span><div class="feature-name">互动特效</div><div class="feature-desc">3D 粒子互动墙、贪吃蛇小游戏、动态粒子背景</div></div>
+      <div class="feature"><span class="feature-emoji">📞</span><div class="feature-name">联系页面</div><div class="feature-desc">默认联系方式卡片，可上传自定义 HTML 100% 替换整页</div></div>
+      <div class="feature"><span class="feature-emoji">⚙️</span><div class="feature-name">可视化后台</div><div class="feature-desc">所有内容可视化配置，不写一行代码即可完整定制</div></div>
+    </div>
+  </div>
+
+  <!-- 技术栈 -->
+  <div class="glass-card">
+    <h2 class="section-title">🛠 技术栈</h2>
+    <div class="tech-row">
+      <span class="tech-tag orange">PHP 7.4+ (原生)</span>
+      <span class="tech-tag">HTML5 / CSS3</span>
+      <span class="tech-tag pink">JavaScript (ES6+)</span>
+      <span class="tech-tag blue">JSON 文件存储</span>
+      <span class="tech-tag green">Glassmorphism UI</span>
+      <span class="tech-tag orange">JWT 鉴权登录</span>
+      <span class="tech-tag">响应式布局</span>
+      <span class="tech-tag pink">Canvas 粒子动效</span>
+      <span class="tech-tag blue">无外部依赖</span>
+      <span class="tech-tag green">无需数据库</span>
+    </div>
+    <div class="warn-box">
+      <b>✨ 零依赖：</b>所有静态资源（图标、字体、默认图、CSS、JS）都已内置在 <code>static/</code> 目录，
+      部署到无外网环境的服务器也能完美运行，无需加载任何 CDN。
+    </div>
+  </div>
+
+  <!-- 目录结构 -->
+  <div class="glass-card">
+    <h2 class="section-title">📁 目录结构</h2>
+    <div class="structure">
+<span class="c1">personal-homepage/</span><br>
+├─ <span class="c2">index.html</span>            首页<br>
+├─ <span class="c2">shop.html</span>             商城 · 自助购 / 卡密发货<br>
+├─ <span class="c2">photos.html</span>           相册 · 照片墙<br>
+├─ <span class="c2">software.html</span>         软件库<br>
+├─ <span class="c2">tools.html</span>            工具箱 · 多接口查询<br>
+├─ <span class="c2">message.html</span>          留言板<br>
+├─ <span class="c2">contact.html</span>          联系页 <span class="c4">(支持上传HTML替换)</span><br>
+├─ <span class="c2">game.html</span>             小游戏合集<br>
+├─ <span class="c2">particle3d.html</span>       3D 粒子互动墙<br>
+├─ <span class="c2">about.html</span>            ⭐ 介绍页 (本页)<br>
+├─ <span class="c2">deploy.html</span>           ⭐ 部署教程<br>
+├─ <span class="c2">README.md</span>             GitHub 介绍<br>
+├─ <span class="c2">login.html / admin.html</span>   登录 + 后台管理<br>
+│<br>
+├─ <span class="c3">api/</span>                  所有后端接口 (PHP)<br>
+├─ <span class="c3">data/</span>                 全部数据存储 (JSON)<br>
+│   └─ shop/  software_files/  ...<br>
+├─ <span class="c3">uploads/</span>              用户上传资源<br>
+│   └─ shop/ ⭐ 商品图片（保留）<br>
+├─ <span class="c3">music/</span>                首页背景乐<br>
+└─ <span class="c3">static/</span>               全部静态资源（保留，不要删！）
+    </div>
+  </div>
+
+  <!-- 默认信息 -->
+  <div class="glass-card">
+    <h2 class="section-title">🚀 开始使用</h2>
+    <div class="feature-grid">
+      <div class="feature">
+        <span class="feature-emoji">🔑</span>
+        <div class="feature-name">默认后台</div>
+        <div class="feature-desc">
+          用户名 <b>admin</b><br>
+          密 码 <b>admin</b><br>
+          <span style="color:#dc2626;font-weight:500">部署后请立即修改！</span>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-emoji">🖥</span>
+        <div class="feature-name">本地预览</div>
+        <div class="feature-desc">
+          <code style="background:rgba(0,0,0,0.05);padding:2px 6px;border-radius:4px">php -S 127.0.0.1:8080</code><br>
+          浏览器打开 <code>http://127.0.0.1:8080</code>
+        </div>
+      </div>
+      <div class="feature">
+        <span class="feature-emoji">🌐</span>
+        <div class="feature-name">服务器部署</div>
+        <div class="feature-desc">PHP 7.4+ / 目录可写 / 无需数据库。<br>详细步骤见部署教程。</div>
+      </div>
+      <div class="feature">
+        <span class="feature-emoji">⚠️</span>
+        <div class="feature-name">安全提示</div>
+        <div class="feature-desc">
+          修改 <code>api/login.php</code> 里的 <code>ADMIN_USER</code> / <code>ADMIN_PASS</code> / <code>JWT_SECRET</code>。
+        </div>
+      </div>
+    </div>
+    <div class="action-row">
+      <a class="action-btn primary" href="deploy.html">📖 详细部署教程 →</a>
+      <a class="action-btn secondary" href="index.html">🏠 回到首页</a>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

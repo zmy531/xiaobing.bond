@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>软件下载 - Zmy</title>
+	<link rel="icon" href="./static/img/favicon.ico">
+	<link rel="stylesheet" href="./static/css/style.css">
+	<link rel="stylesheet" href="./static/css/root.css">
+	<style>
+		.software-page { max-width: 900px; margin: 0 auto; padding: 20px; min-height: 100vh; }
+		.page-header { margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; }
+		.page-title { font-size: 28px; font-weight: 800; font-family: "title"; }
+		.back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); color: var(--main_text_color); font-size: 14px; transition: all 0.3s; text-decoration: none; }
+		.back-btn:hover { background: var(--item_hover_color); transform: translateX(-3px); }
+		
+		.software-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+		.software-card {
+			background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter));
+			-webkit-backdrop-filter: blur(var(--card_filter));
+			border-radius: 16px; padding: 20px; transition: all 0.3s;
+			border: 1px solid rgba(128,128,128,0.1);
+		}
+		.software-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
+		.software-icon { font-size: 48px; margin-bottom: 12px; }
+		.software-name { font-size: 18px; font-weight: 700; color: var(--item_left_title_color); margin-bottom: 6px; }
+		.software-desc { font-size: 13px; color: var(--item_left_text_color); margin-bottom: 12px; line-height: 1.5; min-height: 40px; }
+		.software-meta { display: flex; gap: 12px; margin-bottom: 14px; font-size: 12px; color: var(--item_left_text_color); }
+		.software-meta span { padding: 3px 8px; border-radius: 6px; background: rgba(102,126,234,0.1); color: var(--purple_text_color); }
+		.software-key-tag { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; display: inline-block; margin-bottom: 12px; }
+		.key-required { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+		.key-free { background: rgba(82,196,26,0.15); color: #52c41a; }
+		.download-btn {
+			width: 100%; padding: 12px; border: none; border-radius: 10px;
+			background: linear-gradient(135deg, #667eea, #764ba2); color: #fff;
+			font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s;
+			font-family: inherit;
+		}
+		.download-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+		.download-btn:active { transform: translateY(0); }
+		.download-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+		/* 图片预览 */
+		.preview-btn {
+			width: 100%; padding: 10px; border: 1px solid rgba(128,128,128,0.2);
+			border-radius: 10px; background: rgba(255,255,255,0.06); color: var(--main_text_color);
+			font-size: 13px; cursor: pointer; transition: all 0.3s; font-family: inherit;
+			margin-bottom: 10px;
+		}
+		.preview-btn:hover { background: var(--item_hover_color); }
+		.software-preview-img {
+			width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px;
+			margin-bottom: 10px; cursor: pointer; background: rgba(0,0,0,0.05);
+		}
+		/* 图片预览大图弹窗 */
+		.preview-overlay {
+			position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 999998;
+			display: none; align-items: center; justify-content: center; padding: 20px;
+			cursor: zoom-out;
+		}
+		.preview-overlay.active { display: flex; }
+		.preview-overlay img { max-width: 95%; max-height: 95vh; border-radius: 8px; }
+
+		/* 卡密验证弹窗 */
+		.key-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 99999; padding: 20px; }
+		.key-modal.active { display: flex; }
+		.key-modal-box { width: 100%; max-width: 400px; border-radius: 20px; padding: 30px; background: var(--item_bg_color); backdrop-filter: blur(20px); }
+		.key-modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--item_left_title_color); text-align: center; }
+		.key-modal-desc { font-size: 13px; color: var(--item_left_text_color); margin-bottom: 16px; text-align: center; }
+		.key-input {
+			width: 100%; padding: 12px 14px; border: 1px solid rgba(128,128,128,0.2);
+			border-radius: 10px; background: rgba(255,255,255,0.06);
+			color: var(--main_text_color); font-size: 14px; font-family: inherit;
+			outline: none; box-sizing: border-box; margin-bottom: 12px;
+		}
+		.key-input:focus { border-color: var(--purple_text_color); }
+		.key-error { font-size: 12px; color: #ff6b6b; margin-bottom: 12px; min-height: 18px; }
+		.key-btns { display: flex; gap: 10px; }
+		.key-btns button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+		.btn-cancel { background: rgba(128,128,128,0.2); color: var(--main_text_color); }
+		.btn-cancel:hover { background: rgba(128,128,128,0.3); }
+		.btn-confirm { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+		.btn-confirm:hover { opacity: 0.9; }
+
+		.empty-state { text-align: center; padding: 60px 20px; color: var(--item_left_text_color); }
+		.empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+
+		@media (max-width: 600px) {
+			.software-page { padding: 12px; }
+			.page-title { font-size: 22px; }
+			.software-grid { grid-template-columns: 1fr; }
+		}
+	</style>
+</head>
+<body>
+	<div id="zmy-loading"><div id="zmy-loading-center"></div></div>
+	<div class="zmy-filter"></div>
+
+	<div class="software-page">
+		<header class="page-header">
+			<h1 class="page-title">📦 软件下载</h1>
+			<a href="./index.html" class="back-btn">← 返回主页</a>
+		</header>
+
+		<div id="software-list" class="software-grid">
+			<div class="empty-state" style="grid-column:1/-1">
+				<div class="empty-icon">📦</div>
+				<div>加载中...</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 图片预览大图 -->
+	<div id="preview-overlay" class="preview-overlay" onclick="this.classList.remove('active')">
+		<img id="preview-large-img" src="" alt="预览" />
+	</div>
+
+	<!-- 卡密验证弹窗 -->
+	<div id="key-modal" class="key-modal" onclick="if(event.target===this)closeKeyModal()">
+		<div class="key-modal-box">
+			<div class="key-modal-title">🔑 卡密验证</div>
+			<div class="key-modal-desc" id="key-modal-desc">请输入卡密获取下载权限</div>
+			<input type="text" id="key-input" class="key-input" placeholder="请输入卡密" onkeydown="if(event.key==='Enter')confirmKey()">
+			<div class="key-error" id="key-error"></div>
+			<div class="key-btns">
+				<button class="btn-cancel" onclick="closeKeyModal()">取消</button>
+				<button class="btn-confirm" id="key-confirm-btn" onclick="confirmKey()">验证下载</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- 音乐播放器 -->
+	<div class="music-player">
+		<audio id="bg-music" src="./背景乐.mp3" loop preload="auto"></audio>
+		<button id="music-btn" class="music-btn" onclick="toggleMusic()">
+			<svg id="music-icon-play" viewBox="0 0 1024 1024" style="display:none">
+				<path d="M672 494.464L400 313.344V735.552L672 549.504z" fill="currentColor"/>
+				<path d="M400 106.688C192 106.688 42.688 256 42.688 463.872S192 821.056 400 821.056V106.688z" fill="currentColor"/>
+				<path d="M672 106.688c-208 0-357.312 149.312-357.312 357.184S464 821.056 672 821.056V106.688z" fill="currentColor"/>
+			</svg>
+			<svg id="music-icon-pause" viewBox="0 0 1024 1024">
+				<path d="M614.4 821.056V106.688c0-33.792-27.584-61.376-61.376-61.376h-85.376c-33.792 0-61.376 27.584-61.376 61.376v714.368c0 33.792 27.584 61.376 61.376 61.376h85.376c33.792 0 61.376-27.584 61.376-61.376z" fill="currentColor"/>
+				<path d="M870.4 821.056V106.688c0-33.792-27.584-61.376-61.376-61.376h-85.376c-33.792 0-61.376 27.584-61.376 61.376v714.368c0 33.792 27.584 61.376 61.376 61.376h85.376c33.792 0 61.376-27.584 61.376-61.376z" fill="currentColor"/>
+			</svg>
+		</button>
+	</div>
+
+	<footer style="position:relative;padding:20px;text-align:center;color:var(--footer_text_color);font-size:13px;">
+		Zmy © 2026 | <a href="https://xiaobing.bond" style="color:inherit">xiaobing.bond</a>
+	</footer>
+
+	<script src="./static/js/script.js"></script>
+	<script>
+		// 隐藏 loading 动画
+		window.addEventListener('load', function() {
+			var el = document.getElementById('zmy-loading');
+			if (el) { el.style.opacity = '0'; setTimeout(function(){ el.style.display = 'none'; }, 300); }
+		});
+		// 兜底：1.5秒后强制隐藏
+		setTimeout(function() {
+			var el = document.getElementById('zmy-loading');
+			if (el) { el.style.opacity = '0'; el.style.display = 'none'; }
+		}, 1500);
+
+		let softwareList = [];
+		let currentSoftwareId = null;
+
+		async function loadSoftware() {
+			try {
+				const r = await fetch('./api/software.php?action=list');
+				const data = await r.json();
+				softwareList = data || [];
+				renderSoftware();
+			} catch(e) {
+				document.getElementById('software-list').innerHTML =
+					'<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">❌</div><div>加载失败，请稍后重试</div></div>';
+			}
+		}
+
+		function renderSoftware() {
+			const container = document.getElementById('software-list');
+			if (softwareList.length === 0) {
+				container.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📭</div><div>暂无软件</div></div>';
+				return;
+			}
+			container.innerHTML = softwareList.map(s => {
+				const sizeStr = s.size > 1048576 ? (s.size / 1048576).toFixed(1) + ' MB' :
+					s.size > 1024 ? (s.size / 1024).toFixed(1) + ' KB' : s.size + ' B';
+				const keyTag = s.requireKey
+					? '<span class="software-key-tag key-required">🔒 卡密解锁</span>'
+					: '<span class="software-key-tag key-free">✅ 免费下载</span>';
+				// 图片预览
+				let previewHtml = '';
+				if (s.isImage) {
+					previewHtml = '<img class="software-preview-img" src="./api/software.php?action=preview&id=' + s.id + '" alt="' + escapeHtml(s.name) + '" onclick="showPreview(this.src)" onerror="this.style.display=\'none\'">';
+				}
+				return `
+					<div class="software-card">
+						<div class="software-icon">${s.icon || '📦'}</div>
+						<div class="software-name">${escapeHtml(s.name)}</div>
+						<div class="software-desc">${escapeHtml(s.description || '')}</div>
+						${previewHtml}
+						${keyTag}
+						<div class="software-meta">
+							<span>v${escapeHtml(s.version || '1.0')}</span>
+							<span>${sizeStr}</span>
+							<span>⬇ ${s.downloadCount || 0}</span>
+						</div>
+						<button class="download-btn" id="dl-btn-${s.id}" onclick="handleDownload('${s.id}', this)">
+							${s.requireKey ? '🔑 卡密下载' : '⬇ 立即下载'}
+						</button>
+					</div>
+				`;
+			}).join('');
+		}
+
+		function showPreview(src) {
+			document.getElementById('preview-large-img').src = src;
+			document.getElementById('preview-overlay').classList.add('active');
+		}
+
+		function handleDownload(id, btn) {
+			const software = softwareList.find(s => s.id === id);
+			if (!software) return;
+			if (software.requireKey) {
+				currentSoftwareId = id;
+				openKeyModal(software);
+			} else {
+				freeDownload(id, btn);
+			}
+		}
+
+		async function freeDownload(id, btn) {
+			if (btn) { btn.disabled = true; btn.textContent = '⏳ 准备下载...'; }
+			try {
+				const r = await fetch('./api/software.php?action=verify', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ softwareId: id, key: '' })
+				});
+				const data = await r.json();
+				if (data.success) {
+					if (btn) btn.textContent = '⬇ 下载中...';
+					// 使用 iframe 触发下载，避免页面跳转问题
+					const link = document.createElement('a');
+					link.href = './api/software.php?action=download&id=' + id + '&token=' + data.token;
+					link.download = '';
+					document.body.appendChild(link);
+					link.click();
+					document.body.removeChild(link);
+					setTimeout(function() {
+						if (btn) { btn.disabled = false; btn.textContent = '⬇ 立即下载'; }
+					}, 2000);
+				} else {
+					alert(data.error || '获取下载链接失败');
+					if (btn) { btn.disabled = false; btn.textContent = '⬇ 立即下载'; }
+				}
+			} catch(e) {
+				alert('下载失败：' + e.message);
+				if (btn) { btn.disabled = false; btn.textContent = '⬇ 立即下载'; }
+			}
+		}
+
+		function openKeyModal(software) {
+			document.getElementById('key-modal-desc').textContent =
+				'请输入「' + software.name + '」的卡密获取下载权限';
+			document.getElementById('key-input').value = '';
+			document.getElementById('key-error').textContent = '';
+			document.getElementById('key-modal').classList.add('active');
+			setTimeout(() => document.getElementById('key-input').focus(), 100);
+		}
+
+		function closeKeyModal() {
+			document.getElementById('key-modal').classList.remove('active');
+			currentSoftwareId = null;
+		}
+
+		async function confirmKey() {
+			const key = document.getElementById('key-input').value.trim();
+			const errEl = document.getElementById('key-error');
+			errEl.textContent = '';
+			if (!key) { errEl.textContent = '请输入卡密'; return; }
+			const btn = document.getElementById('key-confirm-btn');
+			btn.disabled = true;
+			btn.textContent = '验证中...';
+			try {
+				const r = await fetch('./api/software.php?action=verify', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ softwareId: currentSoftwareId, key: key })
+				});
+				const data = await r.json();
+				if (data.success) {
+					btn.textContent = '⬇ 下载中...';
+					const link = document.createElement('a');
+					link.href = './api/software.php?action=download&id=' + currentSoftwareId + '&token=' + data.token;
+					link.download = '';
+					document.body.appendChild(link);
+					link.click();
+					document.body.removeChild(link);
+					closeKeyModal();
+					btn.textContent = '验证下载';
+				} else {
+					errEl.textContent = data.error || '验证失败';
+				}
+			} catch(e) {
+				errEl.textContent = '网络错误：' + e.message;
+			}
+			btn.disabled = false;
+			btn.textContent = '验证下载';
+		}
+
+		function escapeHtml(str) {
+			const div = document.createElement('div');
+			div.textContent = str;
+			return div.innerHTML;
+		}
+
+		// 音乐播放器
+		let musicPlaying = false;
+		const bgMusic = document.getElementById('bg-music');
+		const musicBtn = document.getElementById('music-btn');
+		const playIcon = document.getElementById('music-icon-play');
+		const pauseIcon = document.getElementById('music-icon-pause');
+		function toggleMusic() {
+			if (musicPlaying) {
+				bgMusic.pause();
+				musicPlaying = false;
+				playIcon.style.display = 'none';
+				pauseIcon.style.display = 'block';
+				musicBtn.classList.remove('playing');
+				localStorage.setItem('musicPlaying', 'false');
+			} else {
+				bgMusic.play().then(() => {
+					musicPlaying = true;
+					playIcon.style.display = 'block';
+					pauseIcon.style.display = 'none';
+					musicBtn.classList.add('playing');
+					localStorage.setItem('musicPlaying', 'true');
+				}).catch(() => {});
+			}
+		}
+		function tryPlayMusic() {
+			if (localStorage.getItem('musicPlaying') === 'false') return;
+			bgMusic.volume = 0.5;
+			bgMusic.play().then(() => {
+				musicPlaying = true;
+				playIcon.style.display = 'block';
+				pauseIcon.style.display = 'none';
+				musicBtn.classList.add('playing');
+			}).catch(() => {
+				musicPlaying = false;
+				playIcon.style.display = 'none';
+				pauseIcon.style.display = 'block';
+				musicBtn.classList.remove('playing');
+			});
+		}
+		document.addEventListener('click', function initMusic() {
+			tryPlayMusic();
+			document.removeEventListener('click', initMusic);
+		}, { once: true });
+		window.addEventListener('load', tryPlayMusic);
+
+		loadSoftware();
+	</script>
+</body>
+</html>

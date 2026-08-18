@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>小冰商城 - Zmy</title>
+	<link rel="icon" href="./static/img/favicon.ico">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="./static/css/style.css">
+	<link rel="stylesheet" href="./static/css/root.css">
+	<style>
+		body{
+			background:linear-gradient(135deg,#e0e7ff 0%,#f0f4ff 25%,#fce7f3 50%,#f0f4ff 75%,#e0e7ff 100%);
+			background-attachment:fixed;min-height:100vh;
+		}
+		.glass-blob{position:fixed;border-radius:50%;filter:blur(80px);opacity:0.3;pointer-events:none;z-index:0}
+		.glass-blob.b1{width:400px;height:400px;background:#a78bfa;top:-100px;left:-100px;animation:float1 12s ease-in-out infinite}
+		.glass-blob.b2{width:350px;height:350px;background:#60a5fa;bottom:-80px;right:-80px;animation:float2 14s ease-in-out infinite}
+		.glass-blob.b3{width:300px;height:300px;background:#f472b6;top:40%;right:20%;animation:float3 16s ease-in-out infinite}
+		@keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,80px)}}
+		@keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,-60px)}}
+		@keyframes float3{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,50px)}}
+		.shop-page{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:20px;min-height:100vh}
+		.glass{background:rgba(255,255,255,0.55);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,0.7);box-shadow:0 8px 32px rgba(31,38,135,0.08)}
+		.shop-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+		.shop-back{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:100px;background:rgba(255,255,255,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.6);color:#1e293b;font-size:14px;font-weight:500;text-decoration:none;transition:all 0.3s;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+		.shop-back:hover{background:rgba(255,255,255,0.7);transform:translateX(-3px)}
+		.shop-title{font-size:28px;font-weight:800;font-family:"title";color:#1e293b;letter-spacing:-0.5px}
+		.shop-title-sub{font-size:13px;color:#64748b;font-weight:400;margin-top:2px;text-align:right}
+		.shop-notice{padding:14px 20px;border-radius:16px;margin-bottom:24px;font-size:14px;color:#475569;line-height:1.6;display:flex;align-items:center;gap:8px}
+		.shop-notice .notice-icon{font-size:18px;flex-shrink:0}
+		.shop-actions{display:flex;gap:10px;margin-bottom:24px}
+		.shop-actions button{padding:10px 20px;border-radius:100px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.4);color:#475569;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.25s}
+		.shop-actions button:hover{background:rgba(255,255,255,0.7)}
+		.shop-actions button.active{background:#7c3aed;color:#fff;border-color:#7c3aed}
+		.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+		.product-card{border-radius:24px;overflow:hidden;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column}
+		.product-card:hover{transform:translateY(-6px);box-shadow:0 20px 50px rgba(31,38,135,0.12);border-color:rgba(255,255,255,0.9)}
+		.product-img-wrap{width:100%;height:170px;overflow:hidden;position:relative}
+		.product-img-wrap::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(255,255,255,0.3) 100%);pointer-events:none}
+		.product-img{width:100%;height:100%;object-fit:cover;transition:transform 0.5s}
+		.product-card:hover .product-img{transform:scale(1.05)}
+		.product-info{padding:18px 20px 20px;flex:1;display:flex;flex-direction:column}
+		.product-name{font-size:17px;font-weight:700;color:#1e293b;margin-bottom:6px}
+		.product-desc{font-size:13px;color:#64748b;line-height:1.5;margin-bottom:14px;flex:1}
+		.product-bottom{display:flex;align-items:center;justify-content:space-between}
+		.product-price{font-size:24px;font-weight:800;color:#7c3aed;letter-spacing:-0.5px}
+		.product-stock{font-size:12px;color:#94a3b8;margin-top:2px}
+		.product-buy{padding:10px 22px;border-radius:100px;border:1px solid rgba(124,58,237,0.2);background:rgba(124,58,237,0.08);color:#7c3aed;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.25s;font-family:inherit}
+		.product-buy:hover{background:#7c3aed;color:#fff;transform:scale(1.05)}
+		.product-buy:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+		.shop-empty{text-align:center;padding:60px 20px;color:#64748b;font-size:16px}
+
+		/* 弹窗 */
+		.modal{position:fixed;inset:0;background:rgba(30,41,59,0.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px}
+		.modal.active{display:flex}
+		.modal-box{width:100%;max-width:420px;border-radius:28px;padding:32px;max-height:90vh;overflow-y:auto;background:rgba(255,255,255,0.7);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border:1px solid rgba(255,255,255,0.8);box-shadow:0 24px 60px rgba(31,38,135,0.15)}
+		.modal-title{font-size:20px;font-weight:700;margin-bottom:20px;color:#1e293b;text-align:center}
+
+		/* 商品详情 */
+		.prod-detail{display:flex;gap:14px;margin-bottom:20px}
+		.prod-detail img{width:90px;height:90px;border-radius:16px;object-fit:cover;flex-shrink:0}
+		.prod-detail-info{flex:1}
+		.prod-detail-name{font-size:17px;font-weight:700;color:#1e293b;margin-bottom:4px}
+		.prod-detail-desc{font-size:13px;color:#64748b;line-height:1.5}
+		.qty-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+		.qty-label{font-size:14px;color:#475569;font-weight:500}
+		.qty-control{display:flex;align-items:center;gap:0;border-radius:100px;overflow:hidden;border:1px solid rgba(255,255,255,0.6)}
+		.qty-control button{width:36px;height:36px;border:none;background:rgba(255,255,255,0.4);color:#475569;font-size:18px;cursor:pointer;font-family:inherit}
+		.qty-control button:hover{background:rgba(124,58,237,0.1)}
+		.qty-control input{width:50px;height:36px;border:none;background:rgba(255,255,255,0.6);text-align:center;color:#1e293b;font-size:15px;font-weight:600;outline:none;font-family:inherit}
+		.total-price{margin-left:auto;font-size:18px;font-weight:800;color:#7c3aed}
+
+		.form-group{margin-bottom:16px}
+		.form-group label{display:block;font-size:13px;margin-bottom:6px;color:#475569;font-weight:500}
+		.form-group input{width:100%;padding:12px 16px;border-radius:14px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.6);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;transition:all 0.2s}
+		.form-group input:focus{border-color:#7c3aed;background:rgba(255,255,255,0.8)}
+		.form-group input::placeholder{color:#94a3b8}
+
+		.code-row{display:flex;gap:10px;align-items:flex-end}
+		.code-row .form-group{flex:1;margin-bottom:0}
+		.code-btn{flex-shrink:0;padding:12px 16px;border-radius:14px;border:1px solid rgba(124,58,237,0.2);background:rgba(124,58,237,0.08);color:#7c3aed;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.25s}
+		.code-btn:hover{background:#7c3aed;color:#fff}
+		.code-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+		.pay-section{margin:20px 0;padding:20px;border-radius:20px;background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.5)}
+		.pay-section-title{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:14px;text-align:center}
+		.pay-tabs{display:flex;gap:10px;margin-bottom:16px}
+		.pay-tab{flex:1;padding:10px;border-radius:100px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.3);color:#64748b;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.25s;font-family:inherit}
+		.pay-tab.active{background:#7c3aed;color:#fff;border-color:#7c3aed}
+		.pay-qr{text-align:center}
+		.pay-qr img{width:180px;height:180px;border-radius:20px;object-fit:cover;border:2px solid rgba(255,255,255,0.6)}
+		.pay-tip{font-size:12px;color:#64748b;margin-top:10px;text-align:center}
+
+		.btn-row{display:flex;gap:10px;margin-top:24px}
+		.btn-row button{flex:1;padding:14px;border:none;border-radius:100px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.25s}
+		.btn-primary{background:#7c3aed;color:#fff}
+		.btn-primary:hover{background:#6d28d9;transform:scale(1.02)}
+		.btn-primary:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+		.btn-secondary{background:rgba(255,255,255,0.5);color:#475569;border:1px solid rgba(255,255,255,0.6)}
+		.btn-secondary:hover{background:rgba(255,255,255,0.7)}
+
+		.order-result{text-align:center;padding:20px 0}
+		.order-result .icon{font-size:48px;margin-bottom:12px}
+		.order-result .order-id{font-size:14px;color:#64748b;margin-top:8px;font-family:monospace;word-break:break-all}
+		.key-item{background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.15);border-radius:12px;padding:10px 14px;margin:6px 0;font-family:monospace;font-size:14px;color:#1e293b;word-break:break-all;text-align:left}
+
+		/* 订单查询 */
+		.query-box{margin-bottom:24px}
+		.query-result{margin-top:16px}
+		.query-order{padding:16px;border-radius:16px;margin-bottom:12px}
+		.query-order-status{display:inline-block;padding:3px 10px;border-radius:100px;font-size:12px;font-weight:600}
+		.status-pending{background:rgba(245,158,11,0.15);color:#d97706}
+		.status-completed{background:rgba(34,197,94,0.15);color:#16a34a}
+		.status-rejected{background:rgba(239,68,68,0.15);color:#dc2626}
+
+		@media(max-width:768px){.shop-grid{grid-template-columns:1fr}.shop-title{font-size:22px}.glass-blob{display:none}.modal-box{padding:24px}.prod-detail{flex-direction:column;align-items:center;text-align:center}}
+	
+		/* 联系方式弹窗 */
+		.contact-trigger-btn{
+			width:100%;padding:16px 20px;border:none;border-radius:16px;
+			background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(139,92,246,0.08));
+			border:1px solid rgba(124,58,237,0.2);
+			display:flex;align-items:center;gap:12px;
+			cursor:pointer;transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+			font-family:inherit;
+		}
+		.contact-trigger-btn:hover{
+			transform:translateY(-2px);
+			box-shadow:0 12px 30px rgba(124,58,237,0.15);
+			background:linear-gradient(135deg,rgba(124,58,237,0.18),rgba(139,92,246,0.12));
+		}
+		.contact-trigger-btn:active{transform:scale(0.98)}
+		.contact-trigger-icon{font-size:24px;animation:pulse 2s ease-in-out infinite}
+		@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+		.contact-trigger-text{flex:1;text-align:left;font-size:14px;font-weight:600;color:#7c3aed}
+		.contact-trigger-arrow{font-size:18px;color:#7c3aed;transition:transform 0.3s}
+		.contact-trigger-btn:hover .contact-trigger-arrow{transform:translateX(6px)}
+		.contact-modal-overlay{
+			position:fixed;inset:0;z-index:99999;
+			display:flex;align-items:center;justify-content:center;
+			opacity:0;visibility:hidden;transition:all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+		.contact-modal-overlay.active{opacity:1;visibility:visible}
+		.contact-modal-mask{
+			position:absolute;inset:0;
+			background:rgba(30,41,59,0.45);
+			backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+		}
+		.contact-modal-box{
+			position:relative;width:92%;max-width:380px;
+			max-height:85vh;overflow-y:auto;
+			background:rgba(255,255,255,0.88);
+			backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);
+			border:1px solid rgba(255,255,255,0.9);
+			border-radius:28px;padding:24px;
+			box-shadow:0 30px 80px rgba(31,38,135,0.22);
+			transform:scale(0.7) translateY(30px) rotateX(-5deg);
+			opacity:0;transition:transform 0.5s cubic-bezier(0.34, 1.8, 0.64, 1),opacity 0.3s ease;
+		}
+		.contact-modal-overlay.active .contact-modal-box{
+			transform:scale(1) translateY(0) rotateX(0);opacity:1;
+		}
+		.contact-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+		.contact-modal-title{font-size:20px;font-weight:800;color:#1e293b}
+		.contact-modal-close{
+			width:36px;height:36px;border-radius:50%;
+			background:rgba(128,128,128,0.08);display:flex;
+			align-items:center;justify-content:center;
+			cursor:pointer;transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+			color:#64748b;font-size:14px;
+		}
+		.contact-modal-close:hover{background:rgba(128,128,128,0.15);transform:rotate(90deg) scale(1.1)}
+		.contact-modal-sub{font-size:13px;color:#64748b;margin-bottom:18px}
+		.contact-modal-body{display:flex;flex-direction:column;gap:12px}
+		.contact-modal-footer{
+			margin-top:16px;padding-top:14px;
+			border-top:1px solid rgba(128,128,128,0.1);
+			font-size:12px;color:#94a3b8;text-align:center;
+		}
+		.contact-item{opacity:0;transform:translateX(-30px)}
+		.contact-modal-overlay.active .contact-item{
+			animation:contactItemSlideIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+		}
+		.contact-item:nth-child(1){animation-delay:0.05s}
+		.contact-item:nth-child(2){animation-delay:0.12s}
+		.contact-item:nth-child(3){animation-delay:0.19s}
+		.contact-item:nth-child(4){animation-delay:0.26s}
+		.contact-item:nth-child(5){animation-delay:0.33s}
+		@keyframes contactItemSlideIn{
+			from{opacity:0;transform:translateX(-30px) scale(0.95)}
+			to{opacity:1;transform:translateX(0) scale(1)}
+		}
+		.contact-card{
+			display:flex;align-items:center;gap:14px;
+			padding:14px 16px;border-radius:18px;
+			text-decoration:none;color:inherit;cursor:pointer;
+			transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+			border:1px solid rgba(255,255,255,0.6);
+			position:relative;overflow:hidden;
+		}
+		.contact-card::before{
+			content:'';position:absolute;inset:0;
+			background:linear-gradient(135deg,transparent 0%,rgba(255,255,255,0.3) 100%);
+			opacity:0;transition:opacity 0.3s;pointer-events:none;
+		}
+		.contact-card:hover::before{opacity:1}
+		.contact-card:hover{transform:translateX(8px) scale(1.02);box-shadow:0 12px 30px rgba(0,0,0,0.1)}
+		.contact-card.qq{background:linear-gradient(135deg,rgba(136,180,248,0.3),rgba(96,165,250,0.18));border-color:rgba(136,180,248,0.5)}
+		.contact-card.wechat{background:linear-gradient(135deg,rgba(134,239,172,0.3),rgba(74,222,128,0.18));border-color:rgba(134,239,172,0.5)}
+		.contact-card.email{background:linear-gradient(135deg,rgba(253,186,116,0.3),rgba(251,146,60,0.18));border-color:rgba(253,186,116,0.5)}
+		.contact-card.tg{background:linear-gradient(135deg,rgba(167,139,250,0.3),rgba(129,140,248,0.18));border-color:rgba(167,139,250,0.5)}
+		.contact-card.tg-sub{background:linear-gradient(135deg,rgba(244,114,182,0.3),rgba(251,146,60,0.18));border-color:rgba(244,114,182,0.5)}
+		.contact-card-icon{font-size:26px;flex-shrink:0;z-index:1}
+		.contact-card-info{flex:1;min-width:0;z-index:1}
+		.contact-card-name{font-size:14px;font-weight:700;color:#1e293b}
+		.contact-card-value{font-size:12px;color:#64748b;font-family:monospace;word-break:break-all}
+		.contact-card-arrow{font-size:20px;color:#94a3b8;transition:all 0.3s;z-index:1}
+		.contact-card:hover .contact-card-arrow{transform:translateX(8px);color:#7c3aed}
+		.wechat-qr-box{max-width:340px;text-align:center}
+		.wechat-qr-content{padding:8px 0}
+		.wechat-qr-icon{
+			width:72px;height:72px;border-radius:50%;
+			background:linear-gradient(135deg,#34d399,#10b981);
+			display:flex;align-items:center;justify-content:center;
+			font-size:36px;margin:0 auto 16px;
+			animation:iconFloat 3s ease-in-out infinite;
+		}
+		@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+		.wechat-qr-img{
+			width:200px;height:200px;border-radius:20px;
+			object-fit:cover;margin:0 auto 14px;
+			border:2px solid rgba(255,255,255,0.8);
+			display:block;background:rgba(255,255,255,0.5);
+		}
+		.wechat-qr-id{font-size:14px;color:#64748b;margin-bottom:4px}
+		.wechat-qr-id span{font-weight:700;color:#7c3aed;font-family:monospace}
+		.wechat-qr-tip{font-size:12px;color:#94a3b8}
+	</style>
+</head>
+<body>
+	<div class="glass-blob b1"></div>
+	<div class="glass-blob b2"></div>
+	<div class="glass-blob b3"></div>
+
+	<div class="shop-page">
+		<div class="shop-header">
+			<a href="./index.html" class="shop-back">
+				<svg viewBox="0 0 1024 1024" width="16" height="16" fill="currentColor"><path d="M768 352c0-17.7-14.3-32-32-32H352c-17.7 0-32 14.3-32 32v320c0 17.7 14.3 32 32 32h384c17.7 0 32-14.3 32-32V352z m-64 288H416V416h288v224z M864 416h-64v192h64c17.7 0 32-14.3 32-32v-128c0-17.7-14.3-32-32-32z M224 416h-64c-17.7 0-32 14.3-32 32v128c0 17.7 14.3 32 32 32h64V416z"/></svg>
+				返回首页
+			</a>
+			<div style="text-align:right">
+				<div class="shop-title">小冰商城</div>
+				<div class="shop-title-sub">安全 · 快捷 · 自动发卡</div>
+			</div>
+		</div>
+
+		<!-- 个人信息卡片 -->
+		<div class="glass" id="profile-card" style="border-radius:24px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden">
+			<div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+				<img id="profile-avatar" src="./static/img/logo.png" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.7);flex-shrink:0">
+				<div style="flex:1;min-width:200px">
+					<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+						<span style="font-size:18px;font-weight:800;color:#1e293b">Zmy</span>
+						<span id="profile-regdate" style="font-size:12px;color:#64748b;background:rgba(255,255,255,0.5);padding:2px 10px;border-radius:100px"></span>
+					</div>
+					<div id="profile-notice" style="margin-top:8px;font-size:13px;color:#475569;line-height:1.6"></div>
+				</div>
+			</div>
+			<!-- 联系客服专区 -->
+			<div style="background:rgba(255,255,255,0.4);border-radius:18px;padding:16px;border:1px solid rgba(255,255,255,0.5)">
+				<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+					<span style="font-size:15px;font-weight:700;color:#1e293b">📞 联系客服</span>
+					<span style="font-size:11px;color:#64748b;background:rgba(124,58,237,0.1);padding:2px 8px;border-radius:100px">24h 在线</span>
+				</div>
+				<button class="contact-trigger-btn" onclick="openContactModal()" id="contact-trigger">
+					<span class="contact-trigger-icon">💬</span>
+					<span class="contact-trigger-text">点击查看所有联系方式</span>
+					<span class="contact-trigger-arrow">→</span>
+				</button>
+			</div>
+		</div>
+
+		<div class="shop-notice glass">
+			<span class="notice-icon">📢</span>
+			<span id="shop-notice-text">欢迎光临小冰商城，所有商品自动发卡，安全可靠。</span>
+		</div>
+
+		<div class="shop-actions">
+			<button class="active" id="btn-shop" onclick="showShop()">商品列表</button>
+			<button id="btn-query" onclick="showQuery()">订单查询</button>
+			<a href="./tutorial.html" style="padding:10px 20px;border-radius:100px;border:1px solid rgba(124,58,237,0.3);background:rgba(124,58,237,0.08);color:#7c3aed;font-size:14px;font-weight:600;text-decoration:none;transition:all 0.25s;display:inline-flex;align-items:center;gap:6px" onmouseover="this.style.background='rgba(124,58,237,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(124,58,237,0.08)';this.style.transform='none'">📖 TG教程</a>
+		</div>
+
+		<!-- 商品列表 -->
+		<div id="shop-view">
+			<div class="shop-grid" id="shop-grid">
+				<div class="shop-empty">加载中...</div>
+			</div>
+		</div>
+
+		<!-- 订单查询 -->
+		<div id="query-view" style="display:none">
+			<div class="query-box glass" style="padding:20px;border-radius:20px">
+				<div class="form-group" style="margin-bottom:0">
+					<label>输入订单号或邮箱查询</label>
+					<div style="display:flex;gap:10px">
+						<input type="text" id="query-input" placeholder="订单号 / 邮箱地址" style="flex:1;padding:12px 16px;border-radius:14px;background:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.6);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit" onkeydown="if(event.key==='Enter')doQuery()">
+						<button class="btn-primary" style="flex:0 0 auto;padding:12px 24px" onclick="doQuery()">查询</button>
+					</div>
+				</div>
+			</div>
+			<div class="query-result" id="query-result"></div>
+	</div>
+		<div class="glass" style="border-radius:24px;padding:28px;margin-top:24px">
+			<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+				<span style="font-size:20px">📜</span>
+				<h3 style="margin:0;font-size:16px;font-weight:700;color:#1e293b">商城声明 / 交易须知</h3>
+			</div>
+			<div style="font-size:13px;color:#475569;line-height:1.9">
+				<div style="margin-bottom:6px"><b style="color:#1e293b">1. 商品性质：</b>本站所有商品均为虚拟卡密，一经售出概不退换（卡密异常除外）。</div>
+				<div style="margin-bottom:6px"><b style="color:#1e293b">2. 支付核对：</b>支付前请仔细核对商品与金额，确保支付金额与订单一致，避免多付或少付。</div>
+				<div style="margin-bottom:6px"><b style="color:#1e293b">3. 发货时效：</b>支付成功后系统自动发货，卡密即时显示并同步至订单查询页面。</div>
+				<div style="margin-bottom:6px"><b style="color:#1e293b">4. 卡密保管：</b>请妥善保管您的卡密，因您个人原因泄露造成的损失由买家自行承担。</div>
+				<div style="margin-bottom:6px"><b style="color:#1e293b">5. 售后保障：</b>如卡密无法使用，请在 24 小时内联系客服并提供订单号与卡密截图，核实后补发或退款。</div>
+				<div style="margin-bottom:6px"><b style="color:#1e293b">6. 交易安全：</b>请勿在第三方平台交易，谨防仿冒网站，认准官方域名。</div>
+			</div>
+			<div style="margin-top:14px;padding-top:14px;border-top:1px dashed rgba(128,128,128,0.2);font-size:12px;color:#94a3b8">
+				如有疑问，请通过上方联系方式联系客服 · © 小冰商城
+			</div>
+		</div>
+</div>
+
+
+<!-- 联系方式弹窗 -->
+	<div id="contact-modal" class="contact-modal-overlay">
+		<div class="contact-modal-mask"></div>
+		<div class="contact-modal-box">
+			<div class="contact-modal-header">
+				<span class="contact-modal-title">📞 联系客服</span>
+				<span class="contact-modal-close" onclick="closeContactModal()">✕</span>
+			</div>
+			<div class="contact-modal-sub">选择你方便的联系方式，我们 24 小时在线</div>
+			<div class="contact-modal-body" id="contact-modal-body"></div>
+			<div class="contact-modal-footer">💡 推荐优先使用 TG / QQ 客服响应最快</div>
+		</div>
+	</div>
+
+	<!-- 微信二维码弹窗 -->
+	<div id="wechat-qr-modal" class="contact-modal-overlay">
+		<div class="contact-modal-mask" onclick="closeWechatQr()"></div>
+		<div class="contact-modal-box wechat-qr-box">
+			<div class="contact-modal-header">
+				<span class="contact-modal-title">💚 添加微信客服</span>
+				<span class="contact-modal-close" onclick="closeWechatQr()">✕</span>
+			</div>
+			<div class="wechat-qr-content">
+				<div class="wechat-qr-icon">💚</div>
+				<img id="wechat-qr-img" src="" class="wechat-qr-img" alt="微信二维码" onerror="this.style.display='none';document.getElementById('wxhy-fallback').style.display='flex'">
+				<div id="wxhy-fallback" style="display:none;background:rgba(124,58,237,0.1);border-radius:16px;padding:20px;font-size:18px;font-weight:700;color:#7c3aed;font-family:monospace"></div>
+				<div class="wechat-qr-id">微信号：<span id="wechat-qr-id-text">glb420</span></div>
+				<div class="wechat-qr-tip">长按复制微信号，或扫码添加</div>
+			</div>
+		</div>
+	</div>
+	<!-- 购买弹窗 -->
+	<div class="modal" id="buy-modal">
+		<div class="modal-box" id="buy-box"></div>
+	</div>
+
+<script>
+var products = [];
+
+function escHtml(t){
+	if(!t) return '';
+	return t.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatPrice(price){
+	if(price === null || price === undefined || price === '') return '0.00';
+	var p = parseFloat(price);
+	if(isNaN(p)) return '0.00';
+	if(p > 1e12) return '0.00';
+	return p.toFixed(2);
+}
+
+function showShop(){
+	document.getElementById('shop-view').style.display = 'block';
+	document.getElementById('query-view').style.display = 'none';
+	document.getElementById('btn-shop').classList.add('active');
+	document.getElementById('btn-query').classList.remove('active');
+}
+function showQuery(){
+	document.getElementById('shop-view').style.display = 'none';
+	document.getElementById('query-view').style.display = 'block';
+	document.getElementById('btn-shop').classList.remove('active');
+	document.getElementById('btn-query').classList.add('active');
+}
+
+function loadProducts(){
+	var grid = document.getElementById('shop-grid');
+	grid.innerHTML = '<div class="shop-empty">加载中...</div>';
+	fetch('./api/shop.php?action=products').then(function(r){return r.json()}).then(function(data){
+		if(data.success && data.products && data.products.length > 0){
+			products = data.products;
+			var html = '';
+			for(var i=0; i<data.products.length; i++){
+				var p = data.products[i];
+				var soldout = p.stock <= 0;
+				var priceText = formatPrice(p.price);
+				html += '<div class="product-card glass" data-id="'+escHtml(String(p.id))+'">';
+				if(p.image){
+					html += '<div class="product-img-wrap"><img class="product-img" src="'+escHtml(p.image)+'"></div>';
+				}
+				html += '<div class="product-info">';
+				html += '<div class="product-name">'+escHtml(p.name)+'</div>';
+				html += '<div class="product-desc">'+escHtml(p.description||'')+'</div>';
+				html += '<div class="product-bottom">';
+				html += '<div><div class="product-price">¥'+priceText+'</div><div class="product-stock">库存 '+p.stock+' 件</div></div>';
+				if(soldout){
+					html += '<button class="product-buy" disabled>已售罄</button>';
+				} else {
+					html += '<button class="product-buy" data-action="buy">立即购买</button>';
+				}
+				html += '</div></div></div>';
+			}
+			grid.innerHTML = html;
+			grid.querySelectorAll('[data-action="buy"]').forEach(function(btn){
+				btn.addEventListener('click', function(){
+					var card = btn.closest('.product-card');
+					if(!card) return;
+					var id = card.getAttribute('data-id');
+					openBuyModal(id);
+				});
+			});
+		} else {
+			grid.innerHTML = '<div class="shop-empty">暂无商品，敬请期待</div>';
+		}
+	}).catch(function(e){
+		grid.innerHTML = '<div class="shop-empty">加载失败：'+(e&&e.message?escHtml(e.message):'网络错误')+'，请刷新重试</div>';
+	});
+}
+
+function findProduct(id){
+	for(var i=0; i<products.length; i++){
+		if(String(products[i].id) === String(id)) return products[i];
+	}
+	return null;
+}
+
+var currentProduct = null;
+var currentQty = 1;
+var codeCountdown = 0;
+
+function openBuyModal(id){
+	var p = findProduct(id);
+	if(!p){ alert('商品信息未找到，请刷新页面重试'); return; }
+	currentProduct = p;
+	currentQty = 1;
+	codeCountdown = 0;
+	renderStep1();
+	document.getElementById('buy-modal').classList.add('active');
+}
+
+function renderStep1(){
+	var p = currentProduct;
+	if(!p) return;
+	var priceText = formatPrice(p.price);
+	var totalPrice = formatPrice(parseFloat(p.price) * currentQty);
+	var box = document.getElementById('buy-box');
+	box.innerHTML = ''
+		+ '<div class="modal-title">商品详情</div>'
+		+ '<div class="prod-detail">'
+		+   (p.image ? '<img src="'+escHtml(p.image)+'">' : '')
+		+   '<div class="prod-detail-info">'
+		+     '<div class="prod-detail-name">'+escHtml(p.name)+'</div>'
+		+     '<div class="prod-detail-desc">'+escHtml(p.description||'')+'</div>'
+		+     '<div style="margin-top:8px;font-size:20px;font-weight:800;color:#7c3aed">¥'+priceText+'</div>'
+		+   '</div>'
+		+ '</div>'
+		+ '<div class="qty-row">'
+		+   '<span class="qty-label">购买数量</span>'
+		+   '<div class="qty-control">'
+		+     '<button onclick="changeQty(-1)">−</button>'
+		+     '<input type="text" id="qty-input" value="'+currentQty+'" readonly>'
+		+     '<button onclick="changeQty(1)">+</button>'
+		+   '</div>'
+		+   '<span class="total-price">合计 ¥'+totalPrice+'</span>'
+		+ '</div>'
+		+ '<div class="form-group"><label>邮箱地址（用于接收卡密）</label><input type="email" id="buy-email" placeholder="请输入邮箱地址"></div>'
+		+ '<div class="form-group"><label>备注（选填）</label><input type="text" id="buy-remark" placeholder="备注信息"></div>'
+		+ '<div class="code-row">'
+		+   '<div class="form-group"><label>邮箱验证码</label><input type="text" id="buy-code" placeholder="输入6位验证码" maxlength="6"></div>'
+		+   '<button class="code-btn" id="btn-send-code" onclick="sendCode()">发送验证码</button>'
+		+ '</div>'
+		+ '<div class="btn-row">'
+		+   '<button class="btn-primary" id="btn-confirm-step1">确认订单</button>'
+		+   '<button class="btn-secondary" onclick="closeBuyModal()">取消</button>'
+		+ '</div>';
+
+	var btn = document.getElementById('btn-confirm-step1');
+	if(btn){
+		btn.addEventListener('click', function(){ confirmStep1(btn); });
+	}
+}
+
+function confirmStep1(btnEl){
+	var p = currentProduct;
+	if(!p) return;
+	var emailEl = document.getElementById('buy-email');
+	var codeEl = document.getElementById('buy-code');
+	var remarkEl = document.getElementById('buy-remark');
+	if(!emailEl) return;
+	var email = emailEl.value.trim();
+	var code = codeEl.value.trim();
+
+	if(!email){ alert('请输入邮箱地址'); emailEl.focus(); return; }
+	if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('请输入有效的邮箱地址'); emailEl.focus(); return; }
+	if(!code){ alert('请输入验证码'); codeEl.focus(); return; }
+
+	btnEl.disabled = true;
+	btnEl.textContent = '验证中...';
+
+	fetch('./api/shop.php?action=create_order', {
+		method: 'POST',
+		headers: {'Content-Type': 'application/json'},
+		body: JSON.stringify({
+			productId: p.id,
+			email: email,
+			remark: remarkEl ? remarkEl.value.trim() : '',
+			code: code,
+			quantity: currentQty,
+			dry_run: 1
+		})
+	}).then(function(r){return r.json()}).then(function(data){
+		if(data.success !== false){
+			// 验证码验证通过，进入支付步骤
+			renderStep2();
+		} else {
+			alert(data.message || data.error || '验证失败');
+			btnEl.disabled = false;
+			btnEl.textContent = '确认订单';
+		}
+	}).catch(function(e){
+		alert('网络错误，请稍后重试');
+		btnEl.disabled = false;
+		btnEl.textContent = '确认订单';
+	});
+}
+
+var orderData = null;
+
+function renderStep2(){
+	var p = currentProduct;
+	if(!p) return;
+	var emailEl = document.getElementById('buy-email');
+	var remarkEl = document.getElementById('buy-remark');
+	var email = emailEl ? emailEl.value.trim() : '';
+	var remark = remarkEl ? remarkEl.value.trim() : '';
+	var codeEl = document.getElementById('buy-code');
+	var code = codeEl ? codeEl.value.trim() : '';
+
+	var priceText = formatPrice(p.price);
+	var totalPrice = formatPrice(parseFloat(p.price) * currentQty);
+	var box = document.getElementById('buy-box');
+
+	orderData = {
+		productId: p.id,
+		productName: p.name,
+		email: email,
+		remark: remark,
+		code: code,
+		quantity: currentQty,
+		price: totalPrice
+	};
+
+	box.innerHTML = ''
+		+ '<div class="modal-title" style="display:flex;align-items:center;gap:8px"><span style="cursor:pointer" onclick="renderStep1()" style="color:#7c3aed;font-size:18px">←</span>确认支付</div>'
+		+ '<div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.12);border-radius:16px;padding:16px;margin-bottom:16px">'
+		+   '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:#64748b">商品</span><span style="font-weight:600">'+escHtml(p.name)+'</span></div>'
+		+   '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:#64748b">数量</span><span>'+currentQty+' 件</span></div>'
+		+   '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:#64748b">邮箱</span><span>'+escHtml(email)+'</span></div>'
+		+   '<div style="display:flex;justify-content:space-between"><span style="color:#64748b">合计</span><span style="font-size:20px;font-weight:800;color:#7c3aed">¥'+totalPrice+'</span></div>'
+		+ '</div>'
+		+ '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);border-radius:16px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#b45309;line-height:1.7">'
+		+   '⚠️ <b>支付前请仔细核对资金支付的金额，确保金额为 ¥'+totalPrice+'，不要多付也不要少付。</b><br>'
+		+   '支付完成后请保留支付凭证截图，方便客服核对订单。'
+		+ '</div>'
+		+ '<div class="pay-section">'
+		+   '<div class="pay-section-title">请扫码支付 ¥'+totalPrice+'</div>'
+		+   '<div class="pay-tabs">'
+		+     '<button class="pay-tab active" id="pay-tab-wx" onclick="switchPay(\'wx\')">微信支付</button>'
+		+     '<button class="pay-tab" id="pay-tab-zfb" onclick="switchPay(\'zfb\')">支付宝</button>'
+		+   '</div>'
+		+   '<div class="pay-qr"><img id="pay-qr-img" src="./static/img/wxzf.png" alt="收款码" style="opacity:0.3"></div>'
+		+   '<div class="pay-tip">请使用手机扫码完成支付</div>'
+		+ '</div>'
+		+ '<div class="btn-row">'
+		+   '<button class="btn-primary" id="btn-submit-order">已支付，提交订单</button>'
+		+   '<button class="btn-secondary" onclick="closeBuyModal()">取消</button>'
+		+ '</div>';
+
+	var btnSubmit = document.getElementById('btn-submit-order');
+	if(btnSubmit){
+		btnSubmit.addEventListener('click', function(){ submitOrder(btnSubmit); });
+	}
+	// 动态加载收款码
+	fetch('./api/profile.php?action=get').then(function(r){return r.json()}).then(function(data){
+		if(data.success && data.profile){
+			var p = data.profile;
+			var qrImg = document.getElementById('pay-qr-img');
+			if(qrImg){
+				if(p.pay_wx_qr){
+					qrImg.src = p.pay_wx_qr;
+					qrImg.style.opacity = '1';
+				}
+				if(p.pay_zfb_qr){
+					window.__zfbQrUrl = p.pay_zfb_qr;
+				}
+				if(p.pay_wx_qr){
+					window.__wxQrUrl = p.pay_wx_qr;
+				}
+			}
+		}
+	}).catch(function(e){});
+}
+
+function changeQty(delta){
+	var p = currentProduct;
+	if(!p) return;
+	currentQty += delta;
+	if(currentQty < 1) currentQty = 1;
+	if(currentQty > p.stock) currentQty = p.stock;
+	renderBuyModal();
+}
+
+function switchPay(method){
+	var tabWx = document.getElementById('pay-tab-wx');
+	var tabZfb = document.getElementById('pay-tab-zfb');
+	var img = document.getElementById('pay-qr-img');
+	if(!tabWx || !tabZfb || !img) return;
+	tabWx.classList.toggle('active', method === 'wx');
+	tabZfb.classList.toggle('active', method === 'zfb');
+	if(method === 'wx'){
+		img.src = window.__wxQrUrl || './static/img/wxzf.png';
+	}else{
+		img.src = window.__zfbQrUrl || './static/img/zfbzf.png';
+	}
+}
+
+function closeBuyModal(){
+	document.getElementById('buy-modal').classList.remove('active');
+	if(codeCountdown > 0){ codeCountdown = 0; }
+}
+
+document.getElementById('buy-modal').addEventListener('click', function(e){
+	if(e.target === this) closeBuyModal();
+});
+
+function sendCode(){
+	var emailEl = document.getElementById('buy-email');
+	if(!emailEl) return;
+	var email = emailEl.value.trim();
+	if(!email){ alert('请先输入邮箱地址'); emailEl.focus(); return; }
+	if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('请输入有效的邮箱地址'); emailEl.focus(); return; }
+
+	var btn = document.getElementById('btn-send-code');
+	btn.disabled = true;
+	btn.textContent = '发送中...';
+
+	fetch('./api/shop.php?action=send_code', {
+		method: 'POST',
+		headers: {'Content-Type': 'application/json'},
+		body: JSON.stringify({email: email})
+	}).then(function(r){return r.json()}).then(function(data){
+		if(data.success){
+			alert('验证码已发送至邮箱，请注意查收');
+			startCodeCountdown();
+		} else {
+			alert(data.message || '验证码发送失败');
+			btn.disabled = false;
+			btn.textContent = '发送验证码';
+		}
+	}).catch(function(e){
+		alert('网络错误，请稍后重试');
+		btn.disabled = false;
+		btn.textContent = '发送验证码';
+	});
+}
+
+function startCodeCountdown(){
+	codeCountdown = 60;
+	var btn = document.getElementById('btn-send-code');
+	if(!btn) return;
+	btn.textContent = codeCountdown + 's 后重发';
+	var timer = setInterval(function(){
+		codeCountdown--;
+		if(codeCountdown <= 0){
+			clearInterval(timer);
+			btn.disabled = false;
+			btn.textContent = '发送验证码';
+		} else {
+			btn.textContent = codeCountdown + 's 后重发';
+		}
+	}, 1000);
+}
+
+function submitOrder(btnEl){
+	if(!orderData){ alert('订单数据丢失，请重新下单'); closeBuyModal(); return; }
+	btnEl.disabled = true;
+	btnEl.textContent = '提交中...';
+
+	fetch('./api/shop.php?action=create_order', {
+		method: 'POST',
+		headers: {'Content-Type': 'application/json'},
+		body: JSON.stringify({
+			productId: orderData.productId,
+			email: orderData.email,
+			remark: orderData.remark,
+			code: orderData.code,
+			quantity: orderData.quantity
+		})
+	}).then(function(r){return r.json()}).then(function(data){
+		if(data.success){
+			showOrderSuccess(data);
+		} else {
+			btnEl.disabled = false;
+			btnEl.textContent = '已支付，提交订单';
+			alert(data.message || data.error || '下单失败');
+		}
+	}).catch(function(e){
+		btnEl.disabled = false;
+		btnEl.textContent = '已支付，提交订单';
+		alert('网络错误，请稍后重试');
+	});
+}
+
+function showOrderSuccess(data){
+	var box = document.getElementById('buy-box');
+	box.innerHTML = ''
+		+ '<div class="order-result">'
+		+   '<div class="icon">✅</div>'
+		+   '<div style="font-size:18px;font-weight:700;color:#1e293b">订单提交成功</div>'
+		+   '<div class="order-id">订单号: ' + data.orderId + '</div>'
+		+   '<div style="font-size:14px;color:#64748b;margin-top:12px">数量: ' + (data.quantity || 1) + ' 件</div>'
+		+   '<div style="font-size:16px;color:#7c3aed;font-weight:700;margin-top:4px">金额: ¥' + formatPrice(data.price) + '</div>'
+		+   '<div style="font-size:13px;color:#64748b;margin-top:12px;line-height:1.6">订单已提交，请等待管理员审核<br>审核通过后卡密将发送至您的邮箱<br><br>请牢记订单号，可在"订单查询"中查看状态</div>'
+		+ '</div>'
+		+ '<div class="btn-row" style="margin-top:20px">'
+		+   '<button class="btn-primary" id="btn-view-order">查看订单</button>'
+		+   '<button class="btn-secondary" onclick="closeBuyModal();loadProducts()">关闭</button>'
+		+ '</div>';
+	var btnView = document.getElementById('btn-view-order');
+	if(btnView){
+		btnView.addEventListener('click', function(){
+			closeBuyModal();
+			showQuery();
+			var input = document.getElementById('query-input');
+			if(input) input.value = data.orderId;
+			doQuery();
+		});
+	}
+}
+
+// 订单查询
+function doQuery(){
+	var kw = document.getElementById('query-input').value.trim();
+	var result = document.getElementById('query-result');
+	if(!kw){ result.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px">请输入订单号或邮箱</div>'; return; }
+	result.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px">查询中...</div>';
+	fetch('./api/shop.php?action=query&kw=' + encodeURIComponent(kw)).then(function(r){return r.json()}).then(function(data){
+		if(data.success && data.orders && data.orders.length > 0){
+			var html = '';
+			for(var i=0; i<data.orders.length; i++){
+				var o = data.orders[i];
+				var statusText = o.status === 'completed' ? '已完成' : (o.status === 'pending' ? '待审核' : o.status);
+				var statusClass = o.status === 'completed' ? 'status-completed' : 'status-pending';
+				html += '<div class="query-order glass" style="padding:16px;border-radius:16px;margin-bottom:12px">';
+				html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+				html += '<span style="font-weight:700;color:#1e293b;font-size:14px">'+escHtml(o.id)+'</span>';
+				html += '<span class="query-order-status '+statusClass+'">'+statusText+'</span>';
+				html += '</div>';
+				html += '<div style="font-size:13px;color:#64748b;line-height:1.6">';
+				html += '商品: ' + escHtml(o.productName) + '<br>';
+				html += '数量: ' + (o.quantity || 1) + ' 件<br>';
+				html += '金额: <span style="color:#7c3aed;font-weight:600">¥' + formatPrice(o.price) + '</span><br>';
+				html += '时间: ' + escHtml(o.time) + '<br>';
+				if(o.remark) html += '备注: ' + escHtml(o.remark) + '<br>';
+				html += '</div>';
+				if(o.status === 'completed' && o.keys && o.keys.length > 0){
+					html += '<div style="margin-top:10px;font-size:13px;font-weight:600;color:#1e293b">卡密：</div>';
+					for(var j=0; j<o.keys.length; j++){
+						html += '<div class="key-item">' + escHtml(o.keys[j]) + '</div>';
+					}
+				}
+				html += '</div>';
+			}
+			result.innerHTML = html;
+		} else {
+			result.innerHTML = '<div style="text-align:center;color:#64748b;padding:20px">未找到相关订单</div>';
+		}
+	}).catch(function(e){
+		result.innerHTML = '<div style="text-align:center;color:#ef4444;padding:20px">查询失败，请稍后重试</div>';
+	});
+}
+
+// 微信弹窗已替换为contact-modal方案
+function showWechatModal(wechatId, qrUrl){ return; /* deprecated */ }
+
+// 加载个人信息 + 联系方式
+function loadProfileInfo(){
+	// 先尝试加载公告信息
+	fetch('./api/profile.php?action=get').then(function(r){return r.json()}).then(function(data){
+		if(data.success && data.profile){
+			var p = data.profile;
+			if(p.avatar) document.getElementById('profile-avatar').src = p.avatar;
+			if(p.registerDate) document.getElementById('profile-regdate').textContent = '注册于 ' + p.registerDate;
+			if(p.notice){
+				document.getElementById('profile-notice').textContent = p.notice;
+				document.getElementById('shop-notice-text').textContent = p.notice;
+			}
+		}
+	}).catch(function(e){});
+	// 加载联系方式
+	fetch('./api/contact.php').then(function(r){return r.json()}).then(function(c){
+		// contact data loaded on demand via openContactModal()
+		return;
+		var html = '';
+		if(c.qq) html += '<a href="tencent://message/?uin='+escHtml(c.qq)+'" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border-radius:16px;background:linear-gradient(135deg,rgba(136,180,248,0.2),rgba(96,165,250,0.15));border:1px solid rgba(136,180,248,0.3);text-decoration:none;transition:all 0.25s;cursor:pointer;color:#1e40af;min-height:80px;justify-content:center" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 20px rgba(59,130,246,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><span style="font-size:22px">💬</span><span style="font-size:12px;font-weight:600">QQ客服</span><span style="font-size:10px;color:#64748b;font-family:monospace">'+escHtml(c.qq)+'</span></a>';
+		if(c.wechat) html += '<a href="javascript:void(0)" onclick="showWechatModal(\''+escHtml(c.wechat)+'\',\''+escHtml(c.wechat_qr||'')+'\')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border-radius:16px;background:linear-gradient(135deg,rgba(134,239,172,0.25),rgba(74,222,128,0.15));border:1px solid rgba(134,239,172,0.35);text-decoration:none;transition:all 0.25s;cursor:pointer;color:#15803d;min-height:80px;justify-content:center" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 20px rgba(34,197,94,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><span style="font-size:22px">💚</span><span style="font-size:12px;font-weight:600">微信客服</span><span style="font-size:10px;color:#64748b;font-family:monospace">'+escHtml(c.wechat)+'</span></a>';
+		if(c.email) html += '<a href="mailto:'+escHtml(c.email)+'" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border-radius:16px;background:linear-gradient(135deg,rgba(253,186,116,0.25),rgba(251,146,60,0.15));border:1px solid rgba(253,186,116,0.35);text-decoration:none;transition:all 0.25s;cursor:pointer;color:#c2410c;min-height:80px;justify-content:center" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 20px rgba(249,115,22,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><span style="font-size:22px">📧</span><span style="font-size:12px;font-weight:600">邮箱客服</span><span style="font-size:10px;color:#64748b;font-family:monospace;word-break:break-all">'+escHtml(c.email)+'</span></a>';
+		if(c.tg_main) html += '<a href="https://t.me/'+escHtml(c.tg_main)+'" target="_blank" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border-radius:16px;background:linear-gradient(135deg,rgba(167,139,250,0.25),rgba(129,140,248,0.15));border:1px solid rgba(167,139,250,0.35);text-decoration:none;transition:all 0.25s;cursor:pointer;color:#6d28d9;min-height:80px;justify-content:center" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 20px rgba(139,92,246,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><span style="font-size:22px">✈️</span><span style="font-size:12px;font-weight:600">TG主号</span><span style="font-size:10px;color:#64748b;font-family:monospace">@'+escHtml(c.tg_main)+'</span></a>';
+		if(c.tg_sub) html += '<a href="https://t.me/'+escHtml(c.tg_sub)+'" target="_blank" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border-radius:16px;background:linear-gradient(135deg,rgba(244,114,182,0.25),rgba(251,146,60,0.15));border:1px solid rgba(244,114,182,0.35);text-decoration:none;transition:all 0.25s;cursor:pointer;color:#be185d;min-height:80px;justify-content:center" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 20px rgba(236,72,153,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'"><span style="font-size:22px">✈️</span><span style="font-size:12px;font-weight:600">TG副号</span><span style="font-size:10px;color:#64748b;font-family:monospace">@'+escHtml(c.tg_sub)+'</span></a>';
+	}).catch(function(e){});
+}
+loadProfileInfo();
+loadProducts();
+
+// 联系方式弹窗控制
+function openContactModal(){
+	var modal = document.getElementById('contact-modal');
+	var body = document.getElementById('contact-modal-body');
+	body.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8">加载中...</div>';
+	fetch('./api/contact.php').then(function(r){return r.json()}).then(function(c){
+		var html = '';
+		if(c.qq) html += '<div class="contact-item"><a href="tencent://message/?uin='+escHtml(c.qq)+'" class="contact-card qq" target="_blank"><div class="contact-card-icon">💬</div><div class="contact-card-info"><div class="contact-card-name">QQ 客服</div><div class="contact-card-value">'+escHtml(c.qq)+'</div></div><div class="contact-card-arrow">→</div></a></div>';
+		if(c.wechat) html += '<div class="contact-item"><a href="javascript:void(0)" onclick="showWechatQrModal(\''+escHtml(c.wechat)+'\',\''+escHtml(c.wechat_qr||'')+'\')" class="contact-card wechat"><div class="contact-card-icon">💚</div><div class="contact-card-info"><div class="contact-card-name">微信客服</div><div class="contact-card-value">'+escHtml(c.wechat)+'</div></div><div class="contact-card-arrow">→</div></a></div>';
+		if(c.email) html += '<div class="contact-item"><a href="mailto:'+escHtml(c.email)+'" class="contact-card email"><div class="contact-card-icon">📧</div><div class="contact-card-info"><div class="contact-card-name">邮箱客服</div><div class="contact-card-value">'+escHtml(c.email)+'</div></div><div class="contact-card-arrow">→</div></a></div>';
+		if(c.tg_main) html += '<div class="contact-item"><a href="https://t.me/'+escHtml(c.tg_main)+'" target="_blank" class="contact-card tg"><div class="contact-card-icon">✈️</div><div class="contact-card-info"><div class="contact-card-name">TG 主号</div><div class="contact-card-value">@'+escHtml(c.tg_main)+'</div></div><div class="contact-card-arrow">→</div></a></div>';
+		if(c.tg_sub) html += '<div class="contact-item"><a href="https://t.me/'+escHtml(c.tg_sub)+'" target="_blank" class="contact-card tg-sub"><div class="contact-card-icon">✈️</div><div class="contact-card-info"><div class="contact-card-name">TG 副号</div><div class="contact-card-value">@'+escHtml(c.tg_sub)+'</div></div><div class="contact-card-arrow">→</div></a></div>';
+		if(!html) html = '<div style="text-align:center;color:#94a3b8;padding:20px">暂无联系方式</div>';
+		body.innerHTML = html;
+	}).catch(function(e){
+		body.innerHTML = '<div style="text-align:center;color:#ef4444;padding:20px">加载失败</div>';
+	});
+	modal.classList.add('active');
+}
+function closeContactModal(){
+	document.getElementById('contact-modal').classList.remove('active');
+}
+function showWechatQrModal(wechatId, qrUrl){
+	document.getElementById('wechat-qr-id-text').textContent = wechatId;
+	var img = document.getElementById('wechat-qr-img');
+	var fallback = document.getElementById('wxhy-fallback');
+	if(qrUrl){
+		img.src = qrUrl;
+		img.style.display = 'block';
+		fallback.style.display = 'none';
+	}else{
+		img.style.display = 'none';
+		fallback.style.display = 'flex';
+	}
+	document.getElementById('wechat-qr-modal').classList.add('active');
+}
+function closeWechatQr(){
+	document.getElementById('wechat-qr-modal').classList.remove('active');
+}
+document.querySelectorAll('.contact-modal-mask').forEach(function(m){
+	m.addEventListener('click', function(){ m.parentElement.classList.remove('active'); });
+});
+document.addEventListener('keydown', function(e){
+	if(e.key === 'Escape'){
+		document.querySelectorAll('.contact-modal-overlay.active').forEach(function(m){ m.classList.remove('active'); });
+	}
+});
+
+
+</script>
+</body>
+</html>

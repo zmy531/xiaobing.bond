@@ -1,0 +1,4004 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>后台管理 - Zmy</title>
+	<link rel="icon" href="./static/img/favicon.ico">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="./static/css/style.css">
+	<link rel="stylesheet" href="./static/css/root.css">
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+	<style>
+		/* 覆盖CSS变量为浅色主题深色值 - 用 data-theme="AdminGlass" 彻底隔离主题，避免 root.css 中重复的 html{} 覆盖 */
+		html,
+		html[data-theme="AdminGlass"],
+		html[data-theme="AdminGlass"] body {
+			--name: "AdminGlass" !important;
+			--main_text_color: #1e293b !important;
+			--item_left_title_color: #1e293b !important;
+			--item_left_text_color: #64748b !important;
+			--item_bg_color: rgba(255,255,255,0.55) !important;
+			--item_hover_color: rgba(124,58,237,0.1) !important;
+			--text_bg_color: #7c3aed !important;
+			--purple_text_color: #7c3aed !important;
+			--footer_text_color: #64748b !important;
+			--left_tag_item: rgba(124,58,237,0.1) !important;
+			--fill: #7c3aed !important;
+			--back_filter: 0px !important;
+			--back_filter_color: transparent !important;
+			--gradient: linear-gradient(135deg,#7c3aed,#6d28d9) !important;
+			--card_filter: 0px !important;
+		}
+		#zmy-loading { transition: opacity 0.5s ease; }
+
+		/* 浅色毛玻璃背景 - 匹配卡网页面 */
+		body {
+			background: linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 25%, #fce7f3 50%, #f0f4ff 75%, #e0e7ff 100%);
+			background-attachment: fixed;
+			position: relative;
+			min-height: 100vh;
+		}
+		/* 浮动玻璃光斑 */
+		.glass-blob {
+			position: fixed;
+			border-radius: 50%;
+			filter: blur(80px);
+			opacity: 0.3;
+			pointer-events: none;
+			z-index: 0;
+		}
+		.glass-blob.b1 { width: 400px; height: 400px; background: #a78bfa; top: -100px; left: -100px; animation: float1 12s ease-in-out infinite; }
+		.glass-blob.b2 { width: 350px; height: 350px; background: #60a5fa; bottom: -80px; right: -80px; animation: float2 14s ease-in-out infinite; }
+		.glass-blob.b3 { width: 300px; height: 300px; background: #f472b6; top: 40%; right: 20%; animation: float3 16s ease-in-out infinite; }
+		@keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(60px,80px); } }
+		@keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-50px,-60px); } }
+		@keyframes float3 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-40px,50px); } }
+
+		.admin-layout { position: relative; z-index: 1; }
+
+		/* 液态玻璃效果 - 参考苹果设计 */
+		.admin-sidebar,
+		.stat-card,
+		.chart-box,
+		.table-box,
+		.buy-box {
+			background: rgba(255, 255, 255, 0.55) !important;
+			backdrop-filter: blur(24px) saturate(180%) !important;
+			-webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+			border: 1px solid rgba(255, 255, 255, 0.7);
+			box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+			position: relative;
+		}
+		/* 玻璃顶部光感 - 内部高光 */
+		.admin-sidebar::after,
+		.stat-card::after,
+		.chart-box::after,
+		.table-box::after,
+		.buy-box::after {
+			content: '';
+			position: absolute;
+			top: 0; left: 0; right: 0;
+			height: 40%;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 100%);
+			border-radius: inherit;
+			pointer-events: none;
+			border-top-left-radius: inherit;
+			border-top-right-radius: inherit;
+		}
+
+		/* 统计仪表盘 */
+		.dashboard { margin-bottom: 24px; }
+		.chart-box { border-radius: 24px; padding: 20px; }
+		.chart-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: #1e293b !important; }
+		.chart-box canvas { width: 100% !important; height: 260px !important; max-height: 260px; }
+
+		/* 全局输入框浅色修复 */
+		input[type="text"], input[type="number"], input:not([type]), textarea, select {
+			background: rgba(255,255,255,0.7) !important;
+			color: #1e293b !important;
+			border: 1px solid rgba(128,128,128,0.2) !important;
+		}
+		input::placeholder, textarea::placeholder { color: #94a3b8 !important; }
+		input:focus, textarea:focus, select:focus {
+			border-color: #7c3aed !important;
+			box-shadow: 0 0 0 3px rgba(124,58,237,0.1) !important;
+		}
+		/* 卡密管理 */
+		.key-mgmt-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+		.key-mgmt-bar select, .key-mgmt-bar input { padding: 8px 12px; border: 1px solid rgba(128,128,128,0.2); border-radius: 8px; background: rgba(255,255,255,0.6); color: #1e293b; font-size: 13px; font-family: inherit; outline: none; }
+		.key-mgmt-bar select:focus, .key-mgmt-bar input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+		.key-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+		.key-tag.sfz { background: rgba(102,126,234,0.2); color: #667eea; }
+		.key-tag.used { background: rgba(220,38,38,0.15); color: #dc2626; }
+		.key-tag.unused { background: rgba(82,196,26,0.15); color: #52c41a; }
+		.key-code { font-family: monospace; font-size: 13px; letter-spacing: 0.5px; }
+	</style>
+	<style>
+		/* 整体布局 */
+		.admin-layout { display: flex; min-height: 100vh; }
+		/* 侧边栏 */
+		.admin-sidebar {
+			width: 220px; height: 100vh; position: fixed; left: 0; top: 0;
+			background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%);
+			border-right: 1px solid rgba(255, 255, 255, 0.7); z-index: 100;
+			transition: width 0.3s ease, transform 0.3s ease; overflow: hidden;
+			display: flex; flex-direction: column;
+			box-shadow: 4px 0 24px rgba(31, 38, 135, 0.06);
+		}
+		.admin-sidebar.collapsed { width: 60px; }
+		.admin-sidebar.collapsed .sidebar-title,
+		.admin-sidebar.collapsed .menu-item .text,
+		.admin-sidebar.collapsed .menu-item .badge { display: none; }
+		.admin-sidebar.collapsed .menu-item { justify-content: center; padding: 12px 0; }
+		.sidebar-header { padding: 20px 16px; border-bottom: 1px solid rgba(31, 38, 135, 0.08); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+		.sidebar-title { font-size: 18px; font-weight: 700; color: #1e293b; white-space: nowrap; }
+		.sidebar-toggle {
+			width: 32px; height: 32px; border-radius: 8px; border: none;
+			background: rgba(124, 58, 237, 0.12); color: #7c3aed;
+			cursor: pointer; display: flex; align-items: center; justify-content: center;
+			transition: all 0.3s; font-size: 16px; flex-shrink: 0;
+		}
+		.sidebar-toggle:hover { background: rgba(124, 58, 237, 0.22); }
+		.sidebar-menu { padding: 12px 0; flex: 1; overflow-y: auto; min-height: 0; }
+		.menu-item {
+			display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+			cursor: pointer; color: var(--item_left_text_color); font-size: 14px;
+			transition: all 0.2s; border-radius: 8px; margin: 4px 8px;
+		}
+		.menu-item:hover { background: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+		.menu-item.active { background: rgba(124, 58, 237, 0.12); color: #7c3aed; font-weight: 600; }
+		.menu-item .icon { font-size: 18px; width: 20px; text-align: center; flex-shrink: 0; }
+		.menu-item .text { white-space: nowrap; }
+		.menu-item .badge { font-size: 11px; padding: 1px 6px; border-radius: 8px; background: rgba(124, 58, 237, 0.15); color: #7c3aed; margin-left: auto; }
+		.menu-group-title { font-size: 11px; font-weight: 700; color: var(--item_left_text_color); text-transform: uppercase; letter-spacing: 1px; padding: 14px 16px 6px; opacity: 0.5; }
+		.admin-sidebar.collapsed .menu-group-title { display: none; }
+		.sidebar-footer { padding: 16px; border-top: 1px solid rgba(31, 38, 135, 0.08); flex-shrink: 0; }
+		.sidebar-footer .back-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.5); color: #475569; font-size: 13px; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.6); text-decoration: none; }
+		.sidebar-footer .back-btn:hover { background: rgba(255,255,255,0.8); color: #1e293b; }
+		.admin-sidebar.collapsed .sidebar-footer .back-btn { justify-content: center; padding: 10px 0; }
+		.admin-sidebar.collapsed .sidebar-footer .back-btn span { display: none; }
+		/* 主内容区 */
+		.admin-main { flex: 1; margin-left: 220px; padding: 20px; transition: margin-left 0.3s ease; }
+		.admin-main.expanded { margin-left: 60px; }
+		.admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+		.admin-header .right { display: flex; align-items: center; gap: 12px; }
+		.admin-header .user-info { font-size: 14px; color: #475569; }
+		.admin-header .logout-btn { padding: 8px 16px; border-radius: 10px; background: rgba(220,38,38,0.12); color: #dc2626; border: 1px solid rgba(220,38,38,0.2); font-size: 13px; cursor: pointer; font-family: inherit; }
+		.admin-header .logout-btn:hover { background: rgba(220,38,38,0.22); }
+		/* 统计卡片 */
+		.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+		.stat-card { padding: 16px; border-radius: 12px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.7); box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08); }
+		.stat-card .label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+		.stat-card .value { font-size: 24px; font-weight: 800; color: #7c3aed; }
+		/* 内容面板 */
+		.tab-content { display: none; }
+		.tab-content.active { display: block; }
+		/* 表格 */
+		.table-box { border-radius: 15px; overflow: hidden; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.7); box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08); }
+		.table-wrap { overflow-x: auto; }
+		table { width: 100%; border-collapse: collapse; font-size: 14px; }
+		th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid rgba(31, 38, 135, 0.06); color: #1e293b; }
+		th { font-weight: 600; color: #64748b; font-size: 13px; white-space: nowrap; }
+		td { word-break: break-all; }
+		tr:last-child td { border-bottom: none; }
+		tr:hover td { background: rgba(124, 58, 237, 0.04); }
+		.ip-cell { font-family: monospace; font-size: 13px; }
+		.status-success { color: #52c41a; font-weight: 600; }
+		.status-fail { color: #dc2626; font-weight: 600; }
+		.note-input { width: 100%; min-width: 100px; border: 1px solid rgba(128,128,128,0.2); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-family: inherit; background: rgba(255,255,255,0.6); color: #1e293b; outline: none; transition: all 0.2s; }
+		.note-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+		.action-btn { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); background: rgba(255,255,255,0.5); color: #475569; font-size: 12px; cursor: pointer; font-family: inherit; margin-right: 4px; transition: all 0.2s; font-weight: 500; }
+		.action-btn:hover { background: rgba(124,58,237,0.1); color: #7c3aed; border-color: rgba(124,58,237,0.2); }
+		.action-btn.del { color: #dc2626; border-color: rgba(220,38,38,0.2); }
+		.action-btn.del:hover { background: rgba(220,38,38,0.1); }
+		.action-btn.save { color: #7c3aed; border-color: rgba(124,58,237,0.2); background: rgba(124,58,237,0.08); }
+		.action-btn.save:hover { background: rgba(124,58,237,0.15); }
+		.ua-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--item_left_text_color); font-size: 12px; cursor: pointer; }
+		.ua-cell:hover { white-space: normal; }
+		/* 留言管理 */
+		.msg-mgmt-item { padding: 16px; border-bottom: 1px solid rgba(128,128,128,0.1); }
+		.msg-mgmt-item:last-child { border-bottom: none; }
+		.msg-mgmt-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+		.msg-mgmt-name { font-weight: 600; color: var(--item_left_title_color); }
+		.msg-mgmt-time { font-size: 12px; color: var(--item_left_text_color); }
+		.msg-mgmt-content { font-size: 14px; line-height: 1.6; color: var(--main_text_color); margin-bottom: 8px; white-space: pre-wrap; word-break: break-all; }
+		.msg-mgmt-media { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+		.msg-mgmt-media img { max-width: 150px; max-height: 100px; border-radius: 8px; }
+		.msg-mgmt-ip { font-size: 12px; color: var(--item_left_text_color); font-family: monospace; }
+		.loading-tip, .empty-tip { text-align: center; padding: 40px; color: var(--item_left_text_color); font-size: 14px; }
+		.pager { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+		.pager button { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); background: rgba(255,255,255,0.6); color: #475569; cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.2s; }
+		.pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+		.pager button.active { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+		/* 弹窗 */
+		.buy-modal { position: fixed; inset: 0; background: rgba(30,41,59,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 99999; padding: 20px; }
+		.buy-modal.active { display: flex; }
+		.buy-box { width: 100%; max-width: 480px; border-radius: 24px; padding: 30px; background: rgba(255,255,255,0.75) !important; backdrop-filter: blur(40px) saturate(200%); -webkit-backdrop-filter: blur(40px) saturate(200%); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 24px 60px rgba(31,38,135,0.15); max-height: 90vh; overflow-y: auto; }
+		.buy-box h3 { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #1e293b !important; }
+		.form-group { margin-bottom: 16px; }
+		.form-group label { display: block; font-size: 13px; margin-bottom: 6px; color: #475569 !important; font-weight: 500; }
+		.form-group input, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid rgba(128,128,128,0.2); border-radius: 10px; background: rgba(255,255,255,0.7); color: #1e293b; font-size: 14px; outline: none; box-sizing: border-box; font-family: inherit; transition: all 0.2s; }
+		.form-group input:focus, .form-group textarea:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+		.buy-btns { display: flex; gap: 10px; margin-top: 24px; }
+		.buy-btns button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+		.btn-cancel { background: rgba(128,128,128,0.15); color: #475569; }
+		.btn-cancel:hover { background: rgba(128,128,128,0.25); }
+		.btn-confirm { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; }
+		.btn-confirm:hover { opacity: 0.85; }
+		/* 手机适配 */
+		@media (max-width: 900px) {
+			.admin-sidebar { transform: translateX(-100%); }
+			.admin-sidebar.mobile-open { transform: translateX(0); }
+			.admin-main { margin-left: 0; }
+			.stat-cards { grid-template-columns: repeat(2, 1fr); }
+		}
+		@media (max-width: 600px) {
+			.admin-main { padding: 12px; }
+			.stat-cards { grid-template-columns: 1fr 1fr; }
+			.stat-card .value { font-size: 20px; }
+			th, td { padding: 8px; font-size: 13px; }
+		}
+		/* 手机端顶部菜单按钮 */
+		.mobile-menu-btn {
+			display: none; width: 40px; height: 40px; border-radius: 10px;
+			background: var(--item_bg_color); border: none; color: var(--main_text_color);
+			cursor: pointer; align-items: center; justify-content: center; font-size: 20px;
+		}
+		@media (max-width: 900px) { .mobile-menu-btn { display: flex; } }
+		.green { color: #22c55e; font-weight: 600; }
+		.yellow { color: #eab308; font-weight: 600; }
+		.red { color: #ef4444; font-weight: 600; }
+	</style>
+</head>
+
+<body>
+	<div id="zmy-loading"><div id="zmy-loading-center"></div></div>
+	<div class="zmy-filter"></div>
+
+	<!-- 浮动玻璃光斑 -->
+	<div class="glass-blob b1"></div>
+	<div class="glass-blob b2"></div>
+	<div class="glass-blob b3"></div>
+
+	<div class="admin-layout">
+		<!-- 左侧侧边栏 -->
+		<aside class="admin-sidebar" id="admin-sidebar">
+			<div class="sidebar-header">
+				<span class="sidebar-title">后台管理</span>
+				<button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+			</div>
+			<div class="sidebar-menu">
+				<div class="menu-group-title">站点配置</div>
+				<div class="menu-item active" data-tab="home-config">
+					<span class="icon">🏠</span>
+					<span class="text">首页配置</span>
+				</div>
+				<div class="menu-group-title">用户数据</div>
+				<div class="menu-item" data-tab="visitors">
+					<span class="icon">👥</span>
+					<span class="text">访客IP</span>
+					<span class="badge" id="cnt-visitors">0</span>
+				</div>
+				<div class="menu-item" data-tab="logins">
+					<span class="icon">🔐</span>
+					<span class="text">登录记录</span>
+					<span class="badge" id="cnt-logins">0</span>
+				</div>
+				<div class="menu-item" data-tab="messages">
+					<span class="icon">💬</span>
+					<span class="text">留言管理</span>
+					<span class="badge" id="cnt-messages">0</span>
+				</div>
+				<div class="menu-item" data-tab="visitor-locations">
+					<span class="icon">📍</span>
+					<span class="text">访客地址</span>
+					<span class="badge" id="cnt-visitor-locations">0</span>
+				</div>
+				<div class="menu-group-title">商城管理</div>
+				<div class="menu-item" data-tab="products">
+					<span class="icon">🛒</span>
+					<span class="text">商品管理</span>
+					<span class="badge" id="cnt-products">0</span>
+				</div>
+				<div class="menu-item" data-tab="shop-orders">
+					<span class="icon">📦</span>
+					<span class="text">订单管理</span>
+					<span class="badge" id="cnt-orders">0</span>
+				</div>
+				<div class="menu-item" data-tab="cardkeys">
+					<span class="icon">🔑</span>
+					<span class="text">卡密管理</span>
+					<span class="badge" id="cnt-cardkeys">0</span>
+				</div>
+				<div class="menu-group-title">内容管理</div>
+				<div class="menu-item" data-tab="photos">
+					<span class="icon">📷</span>
+					<span class="text">照片墙</span>
+					<span class="badge" id="cnt-photos">0</span>
+				</div>
+				<div class="menu-item" data-tab="software">
+					<span class="icon">📦</span>
+					<span class="text">软件管理</span>
+					<span class="badge" id="cnt-software">0</span>
+				</div>
+				<div class="menu-item" data-tab="changelog">
+					<span class="icon">📝</span>
+					<span class="text">更新日志</span>
+					<span class="badge" id="cnt-changelog">0</span>
+				</div>
+				<div class="menu-item" data-tab="contact">
+					<span class="icon">📞</span>
+					<span class="text">联系设置</span>
+				</div>
+				<div class="menu-group-title">系统功能</div>
+				<div class="menu-item" data-tab="tool-users">
+					<span class="icon">🔧</span>
+					<span class="text">在线工具用户</span>
+					<span class="badge" id="cnt-tool-users">0</span>
+				</div>
+				<div class="menu-item" data-tab="ai-config">
+					<span class="icon">🤖</span>
+					<span class="text">AI问答库</span>
+				</div>
+				<div class="menu-item" data-tab="particle">
+					<span class="icon">✨</span>
+					<span class="text">粒子互动</span>
+					<span class="badge" id="cnt-particle">0</span>
+				</div>
+			</div>
+			<div class="sidebar-footer">
+				<a href="./index.html" class="back-btn">
+					<span>←</span>
+					<span>返回主页</span>
+				</a>
+			</div>
+		</aside>
+
+		<!-- 主内容区 -->
+		<main class="admin-main" id="admin-main">
+			<div class="admin-header">
+				<button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+				<div class="right">
+					<span class="user-info" id="user-info"></span>
+					<button class="logout-btn" id="logout-btn">退出登录</button>
+				</div>
+			</div>
+
+			<div class="stat-cards" id="stat-cards">
+				<div class="stat-card"><div class="label">访客记录</div><div class="value" id="stat-visitors">-</div></div>
+				<div class="stat-card"><div class="label">登录记录</div><div class="value" id="stat-logins">-</div></div>
+				<div class="stat-card"><div class="label">留言总数</div><div class="value" id="stat-messages">-</div></div>
+				<div class="stat-card"><div class="label">卡密总数</div><div class="value" id="stat-keys">-</div></div>
+			</div>
+
+			<!-- 统计仪表盘：柱状图 -->
+			<div class="dashboard" id="dashboard">
+				<div class="chart-box">
+					<h3>📊 数据统计</h3>
+					<canvas id="bar-chart"></canvas>
+				</div>
+			</div>
+
+			<!-- 站点配置 -->
+			<div id="tab-home-config" class="tab-content">
+				<!-- 个人信息编辑 -->
+				<div class="table-box" style="padding:24px">
+					<h3 style="margin:0 0 20px;color:var(--item_left_title_color)">个人信息设置</h3>
+					<div class="form-group" style="margin-bottom:16px">
+					<label>头像图片地址</label>
+					<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+						<input type="text" id="profile-avatar-input" placeholder="./static/img/logo.png" style="flex:1;min-width:200px;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit" />
+						<button class="action-btn save" onclick="document.getElementById('avatar-upload-input').click()" style="flex-shrink:0">📤 上传头像</button>
+						<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)" />
+					</div>
+					<div id="avatar-preview-box" style="margin-top:10px;width:80px;height:80px;border-radius:50%;background:url('./static/img/logo.png') center/cover no-repeat;border:2px solid rgba(124,58,237,0.3);"></div>
+				</div>
+					<h4 style="margin:0 0 12px;color:var(--item_left_title_color);font-size:14px">💌 首页右上角 · 有话对你说</h4>
+					<div class="form-group" style="margin-bottom:10px">
+						<label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+							<input type="checkbox" id="nb-enabled" style="width:16px;height:16px;accent-color:#7c3aed;cursor:pointer">
+							<span style="font-weight:500">显示此卡片（关闭后将在主页隐藏）</span>
+						</label>
+					</div>
+					<div class="form-group" style="margin-bottom:12px">
+						<label>标题</label>
+						<input type="text" id="nb-title" placeholder="例如：有话对你说" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit">
+					</div>
+					<div class="form-group" style="margin-bottom:16px">
+						<label>内容（支持换行，显示在首页右上角玻璃卡片中）</label>
+						<textarea id="nb-content" placeholder="欢迎来到我的小窝~ 祝你开心每一天！" rows="4" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;resize:vertical"></textarea>
+					</div>
+					<h4 style="margin:0 0 12px;color:var(--item_left_title_color);font-size:14px">联系方式</h4>
+					<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+						<div class="form-group" style="flex:1;min-width:150px"><label>QQ号</label><input type="text" id="profile-qq-input" placeholder="QQ号码" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit"></div>
+						<div class="form-group" style="flex:1;min-width:150px"><label>微信号</label><input type="text" id="profile-wechat-input" placeholder="微信号" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit"></div>
+						<div class="form-group" style="flex:1;min-width:150px"><label>邮箱</label><input type="text" id="profile-email-input" placeholder="邮箱地址" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit"></div>
+						<div class="form-group" style="flex:1;min-width:150px"><label>Telegram</label><input type="text" id="profile-tg-input" placeholder="Telegram用户名" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit"></div>
+					</div>
+					<button onclick="saveProfileInfo()" style="padding:12px 32px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">保存设置</button>
+			</div>
+
+				<!-- 背景音乐管理 -->
+				<div class="table-box" style="padding:24px;margin-top:20px">
+					<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+						<h3 style="margin:0;color:var(--item_left_title_color)">🎵 背景音乐管理</h3>
+						<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+							<button class="action-btn save" onclick="document.getElementById('bgm-upload-input').click()">📤 上传音乐</button>
+							<input type="file" id="bgm-upload-input" multiple accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.lrc" style="display:none" onchange="uploadBgmFiles(this)" />
+							<button class="action-btn" onclick="loadBgmList()">🔄 刷新列表</button>
+							<span style="font-size:13px;color:var(--item_left_text_color)" id="bgm-stats">共 0 首</span>
+						</div>
+					</div>
+					<div style="margin-bottom:12px;padding:10px 14px;border-radius:10px;background:rgba(124,58,237,0.08);font-size:13px;color:var(--item_left_text_color);line-height:1.7">
+						💡 支持批量上传 MP3 / WAV / OGG / M4A / FLAC 等格式；歌词请上传同名 .lrc 文件（例如「稻香.mp3」配「稻香.lrc」）。音乐上传到站点根目录的 <code>music/</code> 文件夹，首页播放器会自动读取播放。
+					</div>
+					<div id="bgm-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+						<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--item_left_text_color);font-size:14px">加载中...</div>
+					</div>
+				</div>
+
+				<!-- 首页背景图切换 -->
+				<div class="table-box" style="padding:24px;margin-top:20px">
+					<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+						<h3 style="margin:0;color:var(--item_left_title_color)">🖼️ 首页背景图切换</h3>
+						<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+							<button class="action-btn save" onclick="document.getElementById('bgimg-upload-input').click()">📤 上传背景图</button>
+							<input type="file" id="bgimg-upload-input" multiple accept="image/*" style="display:none" onchange="uploadBgImages(this)" />
+							<button class="action-btn" onclick="document.getElementById('bgimg-url-input').value='';setBgImageUrl('')">🧹 恢复默认</button>
+						</div>
+					</div>
+					<div style="margin-bottom:16px;padding:10px 14px;border-radius:10px;background:rgba(124,58,237,0.08);font-size:13px;color:var(--item_left_text_color);line-height:1.7">
+						💡 可以上传多张背景图作为备用，点击「设为首页背景」即会对 index.html 生效；也可以直接填入外部图片 URL 设置为当前背景。
+					</div>
+					<div class="form-group" style="margin-bottom:16px">
+						<label>当前背景图片 URL</label>
+						<div style="display:flex;gap:8px;align-items:center">
+							<input type="text" id="bgimg-url-input" placeholder="留空则使用默认渐变背景" style="flex:1;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit" />
+							<button class="action-btn save" onclick="saveBgImageUrl()">💾 保存URL</button>
+						</div>
+					</div>
+					<div id="bgimg-current-preview" style="margin-bottom:16px;padding:12px;border-radius:12px;border:1px dashed rgba(128,128,128,0.3);background:rgba(255,255,255,0.5)">
+						<div style="font-size:12px;color:var(--item_left_text_color);margin-bottom:8px">当前生效背景预览（加载中…）</div>
+						<div id="bgimg-current-box" style="width:100%;height:160px;border-radius:8px;background:linear-gradient(135deg,#e0c3fc,#8ec5fc);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;text-align:center;overflow:hidden;background-size:cover;background-position:center;">默认渐变背景</div>
+					</div>
+					<div style="font-size:13px;color:var(--item_left_text_color);margin-bottom:10px">🗂️ 已上传背景图库</div>
+					<div id="bgimg-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
+						<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--item_left_text_color);font-size:14px">加载中...</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- 访客IP -->
+			<div id="tab-visitors" class="tab-content active">
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+					<h3 style="margin:0;color:var(--item_left_title_color)">访客记录管理</h3>
+					<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+						<span style="font-size:13px;color:var(--item_left_text_color);margin-right:10px">共 <strong id="visitors-total-count" style="color:var(--purple_text_color)">0</strong> 条记录</span>
+						<input type="number" id="clean-visitors-count" min="1" placeholder="数量" style="width:80px;padding:8px 12px;border:1px solid rgba(128,128,128,0.2);border-radius:8px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:13px;outline:none" />
+						<button class="action-btn del" onclick="cleanVisitors('count')">清理指定条数</button>
+						<button class="action-btn del" onclick="cleanVisitors('all')">清理全部</button>
+						<button class="action-btn save" onclick="cleanLocationCache()">清理地址缓存</button>
+					</div>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>IP地址</th><th>地区</th><th>经纬度</th><th>访问路径</th><th>User-Agent</th><th>时间</th><th>备注</th><th>操作</th>
+					</tr></thead><tbody id="visitors-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="visitors-pager"></div>
+			</div>
+
+			<!-- 登录记录 -->
+			<div id="tab-logins" class="tab-content">
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>IP地址</th><th>地区</th><th>用户名</th><th>状态</th><th>User-Agent</th><th>时间</th><th>备注</th><th>操作</th>
+					</tr></thead><tbody id="logins-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="logins-pager"></div>
+			</div>
+
+			<!-- 留言管理 -->
+			<div id="tab-messages" class="tab-content">
+				<div class="table-box" id="messages-box"></div>
+				<div class="pager" id="messages-pager"></div>
+			</div>
+
+			<!-- 照片墙 -->
+			<div id="tab-photos" class="tab-content">
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+					<h3 style="margin:0;color:var(--item_left_title_color)">照片墙管理</h3>
+					<div style="display:flex;gap:10px;align-items:center">
+						<div style="display:flex;align-items:center;gap:8px;color:var(--item_left_text_color);font-size:13px">
+							<span>照片墙屏障:</span>
+							<label class="toggle-switch" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+								<input type="checkbox" id="photo-barrier-toggle" onchange="togglePhotoBarrier(this)" style="display:none">
+								<div style="width:44px;height:24px;border-radius:12px;background:rgba(220,38,38,0.2);transition:all 0.3s;position:relative" id="barrier-track">
+									<div style="width:20px;height:20px;border-radius:50%;background:#dc2626;position:absolute;top:2px;left:2px;transition:all 0.3s" id="barrier-thumb"></div>
+								</div>
+								<span id="barrier-text" style="color:#dc2626;font-weight:600">已关闭</span>
+							</label>
+						</div>
+						<button class="action-btn save" onclick="document.getElementById('photo-upload-input').click()">📷 上传照片</button>
+						<input type="file" id="photo-upload-input" multiple accept="image/*" style="display:none" onchange="uploadPhotos(this)" />
+					</div>
+				</div>
+				<div id="admin-photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
+					<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--item_left_text_color);font-size:14px">加载中...</div>
+				</div>
+			</div>
+
+			<!-- 商品管理 -->
+			<div id="tab-products" class="tab-content">
+				<!-- 商城信息设置 -->
+				<div class="table-box" style="padding:24px;margin-bottom:20px">
+					<h3 style="margin:0 0 16px;color:var(--item_left_title_color)">🏪 商城信息设置</h3>
+					<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+						<div class="form-group" style="flex:1;min-width:200px">
+							<label>注册日期</label>
+							<input type="text" id="shop-regdate-input" placeholder="2026-06" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit" />
+						</div>
+					</div>
+					<div class="form-group" style="margin-bottom:16px">
+						<label>商城公告内容</label>
+						<textarea id="shop-notice-input" placeholder="显示在商城页面的公告信息" rows="3" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;resize:vertical"></textarea>
+					</div>
+					<button onclick="saveShopSettings()" style="padding:10px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">💾 保存商城设置</button>
+				</div>
+
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+					<h3 style="margin:0;color:var(--item_left_title_color)">商品列表</h3>
+					<button class="action-btn save" onclick="openProductModal()">+ 新增商品</button>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>图片</th><th>商品名称</th><th>分类</th><th>价格</th><th>库存</th><th>描述</th><th>操作</th>
+					</tr></thead><tbody id="products-tbody"></tbody></table>
+				</div></div>
+			</div>
+
+			<!-- 订单管理 -->
+			<div id="tab-shop-orders" class="tab-content">
+				<!-- 收款码管理 -->
+				<div class="table-box" style="padding:24px;margin-bottom:20px">
+					<h3 style="margin:0 0 16px;color:var(--item_left_title_color)">💰 收款码管理</h3>
+					<div style="display:flex;gap:24px;flex-wrap:wrap">
+						<div style="flex:1;min-width:200px">
+							<label style="display:block;font-size:13px;margin-bottom:8px;color:#475569;font-weight:500">微信收款码</label>
+							<div id="pay-wx-preview" style="width:160px;height:160px;border-radius:16px;background:rgba(128,128,128,0.08) center/cover no-repeat;border:2px dashed rgba(128,128,128,0.2);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px">未上传</div>
+							<button class="action-btn save" style="margin-top:8px" onclick="document.getElementById('pay-wx-upload').click()">📤 上传微信收款码</button>
+							<input type="file" id="pay-wx-upload" accept="image/*" style="display:none" onchange="uploadPayQr(this,'wx')" />
+						</div>
+						<div style="flex:1;min-width:200px">
+							<label style="display:block;font-size:13px;margin-bottom:8px;color:#475569;font-weight:500">支付宝收款码</label>
+							<div id="pay-zfb-preview" style="width:160px;height:160px;border-radius:16px;background:rgba(128,128,128,0.08) center/cover no-repeat;border:2px dashed rgba(128,128,128,0.2);display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px">未上传</div>
+							<button class="action-btn save" style="margin-top:8px" onclick="document.getElementById('pay-zfb-upload').click()">📤 上传支付宝收款码</button>
+							<input type="file" id="pay-zfb-upload" accept="image/*" style="display:none" onchange="uploadPayQr(this,'zfb')" />
+						</div>
+					</div>
+					<div style="margin-top:10px;font-size:12px;color:#94a3b8">💡 上传的收款码将显示在商城支付确认页面，供用户扫码支付</div>
+				</div>
+
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+					<h3 style="margin:0;color:var(--item_left_title_color)">📦 订单审核管理</h3>
+					<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+						<span style="font-size:13px;color:var(--item_left_text_color)">共 <strong id="cnt-orders-display" style="color:var(--purple_text_color)">0</strong> 笔订单</span>
+						<span style="font-size:13px;color:#f59e0b">待审核 <strong id="cnt-orders-pending" style="color:#f59e0b">0</strong> 笔</span>
+						<button class="action-btn save" onclick="loadShopOrders()" style="font-size:13px">🔄 刷新订单</button>
+					</div>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>订单号</th><th>商品</th><th>数量</th><th>金额</th><th>邮箱</th><th>卡密</th><th>时间</th><th>状态</th><th>审核操作</th>
+					</tr></thead><tbody id="orders-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="orders-pager"></div>
+			</div>
+
+			<!-- 在线工具用户 -->
+			<div id="tab-tool-users" class="tab-content">
+				<div style="margin-bottom:16px">
+					<h3 style="margin:0;color:var(--item_left_title_color)">在线工具注册用户</h3>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>邮箱</th><th>首次登录</th><th>最后登录</th><th>登录次数</th>
+					</tr></thead><tbody id="tool-users-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="tool-users-pager"></div>
+			</div>
+
+			<!-- 更新日志 -->
+			<div id="tab-changelog" class="tab-content">
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+					<h3 style="margin:0;color:var(--item_left_title_color)">更新日志</h3>
+					<button class="action-btn save" onclick="openChangelogModal()">+ 添加日志</button>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>日期</th><th>标题</th><th>内容</th><th>操作</th>
+					</tr></thead><tbody id="changelog-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="changelog-pager"></div>
+			</div>
+
+			<!-- 联系设置 -->
+			<div id="tab-contact" class="tab-content">
+				<div style="margin-bottom:16px">
+					<h3 style="margin:0;color:var(--item_left_title_color)">联系设置</h3>
+				</div>
+				<div style="max-width:500px">
+					<div class="form-group">
+						<label>微信号</label>
+						<input type="text" id="contact-wechat" placeholder="请输入微信号" />
+					</div>
+					<div class="form-group">
+						<label>QQ号</label>
+						<input type="text" id="contact-qq" placeholder="请输入QQ号" />
+					</div>
+					<div class="form-group">
+						<label>邮箱地址</label>
+						<input type="text" id="contact-email" placeholder="请输入邮箱地址" />
+					</div>
+					<div class="form-group">
+						<label>微信二维码URL</label>
+						<input type="text" id="contact-wechat-qr" placeholder="请输入微信二维码图片URL" />
+					</div>
+					<div class="form-group">
+						<label>Telegram 主号用户名（t.me/ 后面的部分）</label>
+						<input type="text" id="contact-tg-main" placeholder="例如：glbzmy" />
+					</div>
+					<div class="form-group">
+						<label>Telegram 副号用户名（t.me/ 后面的部分）</label>
+						<input type="text" id="contact-tg-sub" placeholder="例如：zmyglb" />
+					</div>
+					<div class="buy-btns">
+						<button class="btn-confirm" onclick="saveContact(this)">保存设置</button>
+					</div>
+				</div>
+
+				<!-- 联系页面自定义（上传HTML） -->
+				<div style="margin-top:32px;max-width:800px">
+					<h3 style="margin:0 0 16px;color:var(--item_left_title_color);font-size:16px">📞 联系页面自定义（上传 HTML 文件替换）</h3>
+					<div class="table-box" style="padding:20px;margin-bottom:16px;background:rgba(124,58,237,0.04);border:1px dashed rgba(124,58,237,0.2)">
+						<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+							<button class="action-btn save" onclick="document.getElementById('contact-html-upload').click()">📤 上传 HTML 文件</button>
+							<input type="file" id="contact-html-upload" accept=".html,.htm" style="display:none" onchange="uploadContactHtml(this)" />
+							<button class="action-btn" onclick="resetContactHtml()">♻️ 恢复默认</button>
+							<button class="action-btn" onclick="previewContactHtmlPage()">👁 预览效果</button>
+							<button class="action-btn" onclick="window.open('./contact.html','_blank')">🔗 打开 contact.html</button>
+							<span id="contact-html-status" style="font-size:13px;color:#94a3b8;margin-left:auto">加载中...</span>
+						</div>
+						<div style="font-size:12px;color:#94a3b8;line-height:1.7">
+							💡 上传一个 <code style="background:rgba(124,58,237,0.08);padding:2px 6px;border-radius:4px">.html</code> / <code style="background:rgba(124,58,237,0.08);padding:2px 6px;border-radius:4px">.htm</code> 文件即可 <b>完全替换 contact.html 页面</b>（支持任意 HTML / CSS / JS，上传的是什么就显示什么）。
+							<br>• 不填写/不上传时，contact.html 使用上方联系方式渲染默认卡片。
+							<br>• 支持整站完整 HTML：可包含 &lt;style&gt;、&lt;link&gt;、&lt;script&gt;，打开页面会原样嵌入。
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- AI聊天配置 -->
+			<div id="tab-ai-config" class="tab-content">
+				<!-- AI 智能助手运行模式配置 -->
+				<div class="table-box" style="padding:24px;margin-bottom:20px">
+					<h3 style="margin:0 0 16px;color:var(--item_left_title_color)">🤖 AI 助手 (xiaobing-bot) 运行配置</h3>
+					<div style="padding:12px 14px;border-radius:10px;background:rgba(124,58,237,0.08);font-size:13px;color:var(--item_left_text_color);line-height:1.7;margin-bottom:16px">
+						💡 <b>本地问答库模式</b>：仅使用下方问答库匹配关键词，不调用任何外部接口。<br>
+						💡 <b>外部接口模式</b>：优先调用兼容 OpenAI 格式的大模型接口（默认 smanx/free-api 免费接口），接口异常时自动回退本地问答库。
+					</div>
+					<div class="form-group" style="margin-bottom:16px">
+						<label style="display:flex;align-items:center;gap:8px"><span style="font-weight:500">运行模式</span></label>
+						<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px">
+							<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 14px;border-radius:10px;border:1px solid rgba(128,128,128,0.2);background:rgba(255,255,255,0.6);flex:1;min-width:200px">
+								<input type="radio" name="ai-mode" id="ai-mode-local" value="local" />
+								<span style="font-weight:500">📚 本地问答库模式</span>
+							</label>
+							<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:10px 14px;border-radius:10px;border:1px solid rgba(128,128,128,0.2);background:rgba(255,255,255,0.6);flex:1;min-width:200px">
+								<input type="radio" name="ai-mode" id="ai-mode-external" value="external" />
+								<span style="font-weight:500">🌐 外部大模型接口模式</span>
+							</label>
+						</div>
+					</div>
+					<div id="ai-external-section" style="border-left:3px solid rgba(124,58,237,0.4);padding-left:16px">
+						<div class="form-group" style="margin-bottom:12px">
+						<label style="display:flex;align-items:center;justify-content:space-between">
+							<span style="font-weight:500">接口地址 (Base URL)</span>
+							<div style="display:flex;gap:6px;flex-wrap:wrap">
+								<button type="button" class="action-btn" style="padding:5px 10px;font-size:11px" onclick="fillFreeApiPreset()">free-api</button>
+								<button type="button" class="action-btn" style="padding:5px 10px;font-size:11px" onclick="fillPreset('grok')">Grok</button>
+								<button type="button" class="action-btn" style="padding:5px 10px;font-size:11px" onclick="fillPreset('glm')">GLM</button>
+								<button type="button" class="action-btn" style="padding:5px 10px;font-size:11px" onclick="fillPreset('kimi')">Kimi</button>
+								<button type="button" class="action-btn" style="padding:5px 10px;font-size:11px" onclick="fillPreset('deepseek')">DeepSeek</button>
+								<button type="button" class="action-btn" style="padding:5px 10px;font-size:11px" onclick="fillPreset('minimax')">MiniMax</button>
+							</div>
+						</label>
+						<input type="text" id="ai-base-url" placeholder="https://openai.good.hidns.vip/v1" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;margin-top:6px" />
+					</div>
+						<div class="form-group" style="margin-bottom:12px">
+							<label>API Key</label>
+							<input type="text" id="ai-api-key" placeholder="Bearer 后面的 Key" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;margin-top:6px" />
+						</div>
+						<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+							<div class="form-group">
+								<label>模型名</label>
+								<input type="text" id="ai-model" placeholder="qwen3.6-plus" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;margin-top:6px" />
+								<div style="font-size:12px;color:#94a3b8;margin-top:4px">可选：grok-4.20-fast / qwen3.6-plus / z-ai/glm-5.1 / moonshotai/kimi-k2.5 / minimaxai/minimax-m2.7 / deepseek-ai/deepseek-v4-flash</div>
+							</div>
+							<div class="form-group">
+								<label style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+									<span>接口失败处理</span>
+									<span style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+										<input type="checkbox" id="ai-fallback-local" />
+										<span style="font-weight:400;font-size:13px;white-space:nowrap">自动回退本地问答库</span>
+									</span>
+								</label>
+								<button type="button" class="action-btn save" style="width:100%;margin-top:20px;padding:10px 14px" onclick="testAIProxy()">🧪 测试连通并立即保存</button>
+								<div id="ai-test-result" style="margin-top:8px;font-size:12px;line-height:1.7;word-break:break-all"></div>
+							</div>
+						</div>
+						<div class="form-group" style="margin-bottom:12px">
+							<label>系统提示词 (System Prompt)</label>
+							<textarea id="ai-system-prompt" placeholder="你是 xiaobing-bot..." rows="3" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;font-family:inherit;resize:vertical;margin-top:6px"></textarea>
+						</div>
+					</div>
+					<div style="margin-top:8px">
+						<button class="action-btn save" onclick="saveAIConfig()">💾 保存 AI 配置</button>
+					</div>
+				</div>
+
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+					<h3 style="margin:0;color:var(--item_left_title_color)">AI 问答库管理</h3>
+					<div style="display:flex;gap:10px;flex-wrap:wrap">
+						<button class="action-btn save" onclick="openAddQA()">+ 添加问答</button>
+						<button class="action-btn save" onclick="openImportQA()">📥 批量导入</button>
+						<button class="action-btn" onclick="exportQA()">📤 导出全部</button>
+					</div>
+				</div>
+				<div style="margin-bottom:12px;padding:10px 14px;border-radius:10px;background:rgba(124,58,237,0.08);font-size:13px;color:var(--item_left_text_color);line-height:1.6">
+					💡 用户在前端AI助手提问时，系统会根据关键词匹配度返回对应答案。未匹配的问题会提示"暂时没有收录，可联系管理员添加"。
+				</div>
+				<div class="table-box" style="padding:0"><div class="table-wrap">
+					<table>
+						<thead><tr>
+							<th style="width:40px">#</th>
+							<th>关键词（用逗号分隔）</th>
+							<th>答案</th>
+							<th>创建时间</th>
+							<th style="width:120px">操作</th>
+						</tr></thead>
+						<tbody id="qa-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#888">加载中...</td></tr></tbody>
+					</table>
+				</div></div>
+			</div>
+
+			<!-- 卡密管理 -->
+			<div id="tab-cardkeys" class="tab-content">
+				<div class="key-mgmt-bar">
+					<select id="key-type-filter">
+						<option value="">全部类型</option>
+					</select>
+					<button class="action-btn" onclick="openKeyTypeModal()" style="color:#7c3aed;border-color:rgba(124,58,237,0.2)">⚙️ 类型管理</button>
+					<select id="key-status-filter">
+						<option value="">全部状态</option>
+						<option value="unused">未使用</option>
+						<option value="used">已使用</option>
+					</select>
+					<button class="action-btn save" onclick="openKeyGenModal()">+ 生成卡密</button>
+					<button class="action-btn save" onclick="openKeyImportModal()">📥 批量导入</button>
+					<button class="action-btn" onclick="exportKeys()">📋 导出全部</button>
+				<button class="action-btn del" onclick="batchDeleteCardKeys()">🗑️ 批量删除选中</button>
+				<span id="cardkey-selected-count" style="font-size:12px;color:#94a3b8"></span>
+				<span style="margin-left:auto;font-size:13px;color:var(--item_left_text_color)" id="key-stats-text"></span>
+			</div>
+			<div class="table-box"><div class="table-wrap">
+				<table><thead><tr>
+					<th style="width:40px"><input type="checkbox" id="cardkey-select-all" onchange="toggleAllCardKeys(this)"></th>
+					<th>卡密</th><th>类型</th><th>状态</th><th>创建时间</th><th>使用时间</th><th>使用IP</th><th>操作</th>
+				</tr></thead><tbody id="cardkeys-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="cardkeys-pager"></div>
+			</div>
+
+			<!-- 软件管理 -->
+			<div id="tab-software" class="tab-content">
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+					<h3 style="margin:0;color:var(--item_left_title_color)">软件列表</h3>
+					<button class="action-btn save" onclick="openSoftwareModal()">+ 上传软件</button>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>图标</th><th>软件名称</th><th>版本</th><th>大小</th><th>卡密</th><th>下载次数</th><th>上传时间</th><th>操作</th>
+					</tr></thead><tbody id="software-tbody"></tbody></table>
+				</div></div>
+			</div>
+
+			<!-- 粒子互动 -->
+			<div id="tab-particle" class="tab-content">
+				<div style="margin-bottom:10px;display:flex;gap:10px;align-items:center">
+					<button class="action-btn" onclick="batchDeleteParticle()">🗑️ 批量删除选中</button>
+					<span id="particle-selected-count" style="font-size:12px;color:#94a3b8">未选中</span>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th style="width:40px"><input type="checkbox" id="particle-select-all" onchange="toggleAllParticle(this)"></th>
+						<th>IP地址</th><th>类型</th><th>内容</th><th>时间</th><th>操作</th>
+					</tr></thead><tbody id="particle-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="particle-pager"></div>
+			</div>
+
+			<!-- 访客地址 -->
+			<div id="tab-visitor-locations" class="tab-content">
+				<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+					<h3 style="margin:0;color:var(--item_left_title_color)">📍 访客详细地址</h3>
+					<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+						<input type="text" id="location-search" placeholder="搜索IP或地址..." style="padding:8px 12px;border:1px solid rgba(128,128,128,0.2);border-radius:8px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:13px;outline:none" oninput="filterVisitorLocations()">
+						<button class="action-btn save" onclick="refreshVisitorLocations()">🔄 刷新数据</button>
+						<button class="action-btn del" onclick="cleanLocationCache()">🗑️ 清理地址缓存</button>
+						<input type="number" id="clean-locations-count" min="1" placeholder="清理条数" style="width:80px;padding:8px 12px;border:1px solid rgba(128,128,128,0.2);border-radius:8px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:13px;outline:none" />
+						<button class="action-btn del" onclick="cleanVisitors('count')">清理指定条数</button>
+					</div>
+				</div>
+				<div class="table-box"><div class="table-wrap">
+					<table><thead><tr>
+						<th>IP地址</th><th>国家</th><th>省份</th><th>城市</th><th>区县</th><th>街道</th><th>运营商</th><th>时区</th><th>风险评估</th><th>时间</th><th>操作</th>
+					</tr></thead><tbody id="visitor-locations-tbody"></tbody></table>
+				</div></div>
+				<div class="pager" id="visitor-locations-pager"></div>
+			</div>
+
+			<!-- 卡密生成弹窗 -->
+			<div id="keygen-modal" class="buy-modal">
+				<div class="buy-box">
+					<h3>生成卡密</h3>
+					<div class="form-group">
+						<label>卡密类型</label>
+						<select id="keygen-type" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;font-family:inherit;outline:none">
+						</select>
+					</div>
+					<div class="form-group">
+						<label>生成数量</label>
+						<input type="number" id="keygen-count" value="10" min="1" max="500" />
+					</div>
+					<div class="form-group">
+						<label>有效天数</label>
+						<input type="number" id="keygen-days" value="365" min="1" />
+					</div>
+					<div style="font-size:12px;color:var(--item_left_text_color);background:rgba(102,126,234,0.1);padding:10px;border-radius:8px;margin-bottom:16px">
+						格式预览：sfz-<span style="color:var(--purple_text_color);font-weight:600">a3b</span>glb<span style="color:var(--purple_text_color);font-weight:600">7c2</span>
+						<br>（随机字母数字组合，中间固定含 glb）
+					</div>
+					<div class="buy-btns">
+						<button class="btn-cancel" onclick="closeKeyGenModal()">取消</button>
+						<button class="btn-confirm" onclick="generateKeys(this)">生成</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- 卡密导入弹窗 -->
+			<div id="keyimport-modal" class="buy-modal">
+				<div class="buy-box">
+					<h3>批量导入卡密</h3>
+					<div class="form-group">
+						<label>卡密类型</label>
+						<select id="keyimport-type" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;font-family:inherit;outline:none">
+						</select>
+					</div>
+					<div class="form-group">
+						<label>卡密列表（每行一个）</label>
+						<textarea id="keyimport-text" rows="8" style="font-family:monospace;font-size:13px" placeholder="每行一个卡密&#10;sfz-abcglb123&#10;sfz-xyzglb789"></textarea>
+					</div>
+					<div class="buy-btns">
+						<button class="btn-cancel" onclick="closeKeyImportModal()">取消</button>
+						<button class="btn-confirm" onclick="importKeys(this)">导入</button>
+					</div>
+				</div>
+			</div>
+			<!-- 卡密类型管理弹窗 -->
+			<div id="keytype-modal" class="buy-modal">
+				<div class="buy-box">
+					<h3>卡密类型管理</h3>
+					<div id="keytype-list" style="margin-bottom:16px"></div>
+					<div style="border-top:1px solid rgba(128,128,128,0.15);padding-top:16px;margin-top:8px">
+						<div style="font-size:14px;font-weight:600;margin-bottom:10px;color:#1e293b">添加新类型</div>
+						<div class="form-group">
+							<label>前缀（字母数字，用于卡密开头，如 sfz）</label>
+							<input type="text" id="keytype-prefix" placeholder="如：vip" maxlength="10" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;font-family:inherit;outline:none" />
+						</div>
+						<div class="form-group">
+							<label>名称（如：VIP会员）</label>
+							<input type="text" id="keytype-name" placeholder="如：VIP会员" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;font-family:inherit;outline:none" />
+						</div>
+						<div class="buy-btns">
+							<button class="btn-cancel" onclick="closeKeyTypeModal()">关闭</button>
+							<button class="btn-confirm" onclick="addKeyType(this)">添加</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- 更新日志弹窗 -->
+			<div id="changelog-modal" class="buy-modal">
+				<div class="buy-box">
+					<h3 id="changelog-modal-title">添加日志</h3>
+					<div class="form-group">
+						<label>日期</label>
+						<input type="date" id="changelog-date" />
+					</div>
+					<div class="form-group">
+						<label>标题</label>
+						<input type="text" id="changelog-title" placeholder="请输入标题" />
+					</div>
+					<div class="form-group">
+						<label>内容</label>
+						<textarea id="changelog-content" rows="5" placeholder="请输入内容"></textarea>
+					</div>
+					<div class="buy-btns">
+						<button class="btn-cancel" onclick="closeChangelogModal()">取消</button>
+						<button class="btn-confirm" onclick="saveChangelog(this)">保存</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- 软件上传弹窗 -->
+			<div id="software-modal" class="buy-modal">
+				<div class="buy-box">
+					<h3 id="software-modal-title">上传软件</h3>
+					<div class="form-group">
+						<label>软件名称</label>
+						<input type="text" id="software-name" placeholder="请输入软件名称" />
+					</div>
+					<div class="form-group">
+						<label>软件图标（emoji）</label>
+						<input type="text" id="software-icon" placeholder="📦" value="📦" />
+					</div>
+					<div class="form-group">
+						<label>软件描述</label>
+						<textarea id="software-desc" rows="3" placeholder="请输入软件描述"></textarea>
+					</div>
+					<div class="form-group">
+						<label>版本号</label>
+						<input type="text" id="software-version" placeholder="1.0" value="1.0" />
+					</div>
+					<div class="form-group" style="display:flex;align-items:center;gap:10px">
+						<input type="checkbox" id="software-require-key" style="width:auto" onchange="document.getElementById('key-type-row').style.display=this.checked?'block':'none'">
+						<label style="margin:0;flex:1">需要卡密验证下载</label>
+					</div>
+					<div class="form-group" id="key-type-row" style="display:none">
+						<label>卡密类型</label>
+						<select id="software-key-type" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;font-family:inherit;outline:none">
+						</select>
+					</div>
+					<div class="form-group">
+						<label>选择文件</label>
+						<input type="file" id="software-file" style="width:100%;padding:10px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-family:inherit;cursor:pointer" />
+					</div>
+					<div class="buy-btns">
+						<button class="btn-cancel" onclick="closeSoftwareModal()">取消</button>
+						<button class="btn-confirm" onclick="uploadSoftware(this)">上传</button>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<footer style="position:relative;padding:20px;text-align:center;color:#64748b;font-size:13px;margin-left:220px;transition:margin-left 0.3s ease;z-index:1;">
+		Zmy © 2026 | <a href="https://xiaobing.bond" style="color:inherit">xiaobing.bond</a>
+	</footer>
+
+	<script>
+		const token = localStorage.getItem('admin_token');
+		if (!token) { window.location.href = './login.html'; throw new Error('no token'); }
+
+		document.getElementById('user-info').textContent = '管理员: ' + (localStorage.getItem('admin_user') || 'admin');
+		document.getElementById('logout-btn').addEventListener('click', () => {
+			localStorage.removeItem('admin_token');
+			localStorage.removeItem('admin_user');
+			window.location.href = './login.html';
+		});
+
+		function authHeaders() { return { 'Authorization': 'Bearer ' + token }; }
+		function authUrl(url) {
+			return url + (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
+		}
+
+		// ============ 主题 ============
+		function setCookie(n,v,d){var e="";if(d){var t=new Date();t.setTime(t.getTime()+d*864e5);e=";expires="+t.toUTCString()}document.cookie=n+"="+v+e+";path=/"}
+		function getCookie(n){var q=n+"=";var c=document.cookie.split(';');for(var i=0;i<c.length;i++){var x=c[i];while(x.charAt(0)==' ')x=x.substring(1);if(x.indexOf(q)==0)return x.substring(q.length,x.length)}return null}
+		var htmlEl=document.querySelector('html');
+		// 强制后台管理使用 AdminGlass 主题（不使用主页的主题）
+		htmlEl.dataset.theme = 'AdminGlass';
+
+		// ============ 验证token ============
+		fetch(authUrl('/api/verify.php'), { headers: authHeaders() }).then(r => {
+			if (!r.ok) { localStorage.removeItem('admin_token'); window.location.href = './login.html'; }
+		}).catch(() => { window.location.href = './login.html'; });
+
+		// ============ 侧边栏菜单切换 ============
+		const sidebar = document.getElementById('admin-sidebar');
+		const mainContent = document.getElementById('admin-main');
+		const footer = document.querySelector('footer');
+
+		document.querySelectorAll('.menu-item').forEach(item => {
+			item.addEventListener('click', () => {
+				document.querySelectorAll('.menu-item').forEach(x => x.classList.remove('active'));
+				document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+				item.classList.add('active');
+				document.getElementById('tab-' + item.dataset.tab).classList.add('active');
+				// 切换到首页配置时加载个人信息
+				if (item.dataset.tab === 'home-config') {
+					loadProfileInfo();
+					loadBgmList();
+					loadBgImages();
+				}
+				if (item.dataset.tab === 'shop-orders') {
+					loadShopOrders();
+					// 加载收款码预览
+					try {
+						fetch('/api/profile.php?action=get').then(r => r.json()).then(d => {
+							if (d && d.success && d.profile) renderPayQrPreviews(d.profile);
+						});
+					} catch(e) {}
+				}
+				if (item.dataset.tab === 'products') {
+					loadShopProducts();
+					// 加载商城设置
+					try {
+						fetch('/api/profile.php?action=get').then(r => r.json()).then(d => {
+							if (d && d.success && d.profile) {
+								var rd = document.getElementById('shop-regdate-input');
+								var nc = document.getElementById('shop-notice-input');
+								if (rd) rd.value = d.profile.registerDate || '';
+								if (nc) nc.value = d.profile.notice || '';
+							}
+						});
+					} catch(e) {}
+				}
+				if (item.dataset.tab === 'ai-config') {
+					loadQA();
+				}
+				if (item.dataset.tab === 'particle') {
+					loadParticle();
+				}
+				if (item.dataset.tab === 'tool-users') {
+					loadToolUsers();
+				}
+				if (item.dataset.tab === 'visitors') {
+					loadVisitors();
+				}
+				if (item.dataset.tab === 'logins') {
+					loadLogins();
+				}
+				if (item.dataset.tab === 'messages') {
+					loadMessages();
+				}
+				if (item.dataset.tab === 'photos') {
+					loadPhotos();
+				}
+				if (item.dataset.tab === 'software') {
+					loadSoftware();
+				}
+				if (item.dataset.tab === 'changelog') {
+					loadChangelog();
+				}
+				if (item.dataset.tab === 'contact') {
+					loadContact();
+				}
+				if (item.dataset.tab === 'visitor-locations') {
+					loadVisitorLocations();
+				}
+				if (item.dataset.tab === 'cardkeys') {
+					loadCardKeys();
+				}
+				// 手机端点击后关闭侧边栏
+				if (window.innerWidth <= 900) {
+					sidebar.classList.remove('mobile-open');
+				}
+			});
+		});
+
+		// ============ 侧边栏折叠功能 ============
+		document.getElementById('sidebar-toggle').addEventListener('click', () => {
+			sidebar.classList.toggle('collapsed');
+			mainContent.classList.toggle('expanded');
+			if (footer) footer.classList.toggle('expanded');
+		});
+
+		// ============ 手机端菜单按钮 ============
+		document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+			sidebar.classList.toggle('mobile-open');
+		});
+
+		// 点击主内容区关闭手机端侧边栏
+		mainContent.addEventListener('click', () => {
+			if (window.innerWidth <= 900 && sidebar.classList.contains('mobile-open')) {
+				sidebar.classList.remove('mobile-open');
+			}
+		});
+
+		// ============ 分页 ============
+		const PAGE_SIZE = 20;
+		let currentPage = { visitors: 1, logins: 1, messages: 1, shopOrders: 1, toolUsers: 1, changelog: 1, particle: 1, cardkeys: 1, visitorLocations: 1 };
+		let allData = { visitors: [], logins: [], messages: [], toolUsers: [], changelog: [], contact: {}, particle: [], cardkeys: [], keyStats: {}, visitorLocations: [] };
+
+		function renderPager(elId, total, tabKey) {
+			const pages = Math.ceil(total / PAGE_SIZE) || 1;
+			const el = document.getElementById(elId);
+			const cur = currentPage[tabKey];
+			let html = '';
+			html += `<button ${cur<=1?'disabled':''} onclick="goPage('${tabKey}',${cur-1})">上一页</button>`;
+			for (let i = 1; i <= pages && i <= 10; i++) {
+				html += `<button class="${i===cur?'active':''}" onclick="goPage('${tabKey}',${i})">${i}</button>`;
+			}
+			if (pages > 10) html += `<span style="color:var(--item_left_text_color);font-size:13px;align-self:center">.../${pages}页</span>`;
+			html += `<button ${cur>=pages?'disabled':''} onclick="goPage('${tabKey}',${cur+1})">下一页</button>`;
+			el.innerHTML = html;
+		}
+		window.goPage = function(tab, p) {
+			currentPage[tab] = p;
+			if (tab === 'visitors') loadVisitorsPage(p);
+			else if (tab === 'logins') renderLogins();
+			else if (tab === 'messages') renderMessages();
+			else if (tab === 'changelog') renderChangelog();
+			else if (tab === 'particle') renderParticle();
+			else if (tab === 'toolUsers') renderToolUsers();
+			else if (tab === 'cardkeys') renderCardKeys();
+			else if (tab === 'visitorLocations') renderVisitorLocations();
+		};
+
+		function formatTime(ts) {
+			const d = new Date(ts);
+			return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+		}
+		function escapeHtml(s) {
+			if (s === null || s === undefined) return '';
+			s = String(s);
+			return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+		}
+
+		// ============ 访客记录 ============
+		let visitorTotal = 0;
+		function renderVisitors() {
+			const data = allData.visitors;
+			const tbody = document.getElementById('visitors-tbody');
+			if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px">暂无数据</td></tr>'; }
+			else {
+				tbody.innerHTML = data.map(v => {
+					const hasLatLng = v.lat && v.lng;
+					const hasLoc = v.location && v.location !== '未知地区' && v.location !== '查询中...';
+					const latLngCell = hasLatLng
+						? `<span style="font-size:11px;color:var(--purple_text_color)">${v.lat},${v.lng}</span><button class="action-btn map" onclick="openMap('${v.lat}','${v.lng}','${escapeHtml(v.location||'')}')" style="margin-left:4px">地图</button>`
+						: '<span style="color:#666">-</span>';
+					const locCell = escapeHtml(v.location || '查询中...') + (hasLoc ? ` <button class="action-btn search" onclick="searchLocation('${escapeHtml(v.location)}')" style="margin-left:4px">搜索</button>` : '');
+					return `<tr>
+					<td class="ip-cell">${escapeHtml(v.ip)}</td>
+					<td>${locCell}</td>
+					<td style="white-space:nowrap">${latLngCell}</td>
+					<td>${escapeHtml(v.path)}</td>
+					<td class="ua-cell" title="${escapeHtml(v.ua)}">
+						<div class="ua-info">
+							<div class="ua-line"><span class="ua-icon">${browserIcon(v.uaInfo?.browser)}</span> ${escapeHtml(v.uaInfo?.browser||'未知')} <span class="ua-ver">${escapeHtml(v.uaInfo?.browserVer||'')}</span></div>
+							<div class="ua-line"><span class="ua-icon">${osIcon(v.uaInfo?.os)}</span> ${escapeHtml(v.uaInfo?.os||'未知')} <span class="ua-ver">${escapeHtml(v.uaInfo?.osVer||'')}</span></div>
+							<div class="ua-line"><span class="ua-icon">${deviceIcon(v.uaInfo?.device)}</span> ${v.uaInfo?.brand ? `<span class="ua-brand">${escapeHtml(v.uaInfo.brand)}</span>` : ''}${escapeHtml(v.uaInfo?.model||v.uaInfo?.device||'未知')}</div>
+						</div>
+					</td>
+					<td style="white-space:nowrap">${formatTime(v.time || v.ts)}</td>
+					<td><input class="note-input" data-id="${v.id}" data-type="visitors" value="${escapeHtml(v.note||'')}" placeholder="备注..."/></td>
+					<td>
+						<button class="action-btn save" onclick="saveNote('visitors','${v.id}',this)">保存</button>
+						<button class="action-btn del" onclick="delRecord('visitors','${v.id}',this)">删除</button>
+					</td>
+				</tr>`;
+				}).join('');
+			}
+			renderPager('visitors-pager', visitorTotal, 'visitors');
+		}
+
+		// ============ 登录记录 ============
+		function renderLogins() {
+			const data = allData.logins;
+			const start = (currentPage.logins - 1) * PAGE_SIZE;
+			const slice = data.slice(start, start + PAGE_SIZE);
+			const tbody = document.getElementById('logins-tbody');
+			if (slice.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px">暂无数据</td></tr>'; }
+			else {
+				tbody.innerHTML = slice.map(l => `<tr>
+					<td class="ip-cell">${escapeHtml(l.ip)}</td>
+					<td>${escapeHtml(l.location || '')}</td>
+					<td>${escapeHtml(l.username)}</td>
+					<td class="${l.status==='成功'?'status-success':'status-fail'}">${l.status}</td>
+					<td class="ua-cell" title="${escapeHtml(l.ua)}">${escapeHtml(l.ua)}</td>
+					<td style="white-space:nowrap">${formatTime(l.time || l.ts)}</td>
+					<td><input class="note-input" data-id="${l.id}" data-type="logins" value="${escapeHtml(l.note||'')}" placeholder="备注..."/></td>
+					<td>
+						<button class="action-btn save" onclick="saveNote('logins','${l.id}',this)">保存</button>
+						<button class="action-btn del" onclick="delRecord('logins','${l.id}',this)">删除</button>
+					</td>
+				</tr>`).join('');
+			}
+			renderPager('logins-pager', data.length, 'logins');
+		}
+
+		// ============ 留言管理 ============
+		function renderMessages() {
+			const data = allData.messages;
+			const start = (currentPage.messages - 1) * PAGE_SIZE;
+			const slice = data.slice(start, start + PAGE_SIZE);
+			const box = document.getElementById('messages-box');
+			if (slice.length === 0) { box.innerHTML = '<div class="empty-tip">暂无留言</div>'; }
+			else {
+				box.innerHTML = slice.map(m => `<div class="msg-mgmt-item">
+					<div class="msg-mgmt-meta">
+						<div class="msg-mgmt-name">${escapeHtml(m.name)}</div>
+						<div class="msg-mgmt-time">${formatTime(m.time || m.ts)}</div>
+					</div>
+					<div class="msg-mgmt-content">${escapeHtml(m.content)}</div>
+					<div class="msg-mgmt-media">
+						${m.image ? `<img src="/uploads/${m.image}" />` : ''}
+						${m.voice ? `<audio src="/uploads/${m.voice}" controls style="height:32px">` : ''}
+					</div>
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<span class="msg-mgmt-ip">IP: ${escapeHtml(m.ip)} ${m.location ? '| ' + escapeHtml(m.location) : ''}</span>
+						<button class="action-btn del" onclick="delMessage('${m.id}',this)">删除留言</button>
+					</div>
+				</div>`).join('');
+			}
+			renderPager('messages-pager', data.length, 'messages');
+		}
+
+		// ============ 在线工具用户 ============
+		function renderToolUsers() {
+			const data = allData.toolUsers;
+			const start = (currentPage.toolUsers - 1) * PAGE_SIZE;
+			const slice = data.slice(start, start + PAGE_SIZE);
+			const tbody = document.getElementById('tool-users-tbody');
+			if (slice.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px">暂无用户</td></tr>'; }
+			else {
+				tbody.innerHTML = slice.map(u => `<tr>
+					<td>${escapeHtml(u.email)}</td>
+					<td style="white-space:nowrap">${escapeHtml(u.first_login || '')}</td>
+					<td style="white-space:nowrap">${escapeHtml(u.last_login || '')}</td>
+					<td>${u.login_count || 0}</td>
+				</tr>`).join('');
+			}
+			renderPager('tool-users-pager', data.length, 'toolUsers');
+		}
+
+		// ============ 保存备注 ============
+		window.saveNote = async function(type, id, btn) {
+			const input = document.querySelector(`.note-input[data-id="${id}"][data-type="${type}"]`);
+			const note = input.value;
+			btn.textContent = '保存中...'; btn.disabled = true;
+			try {
+				const url = type === 'visitors' ? `/api/visitors.php?id=${id}` : `/api/${type}/${id}`;
+				const r = await fetch(url, {
+					method: 'PUT', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ note })
+				});
+				if (r.ok) { btn.textContent = '已保存'; setTimeout(() => { btn.textContent = '保存'; btn.disabled = false; }, 1000); }
+				else { alert('保存失败'); btn.textContent = '保存'; btn.disabled = false; }
+			} catch { alert('网络错误'); btn.textContent = '保存'; btn.disabled = false; }
+		};
+
+		// ============ 删除记录 ============
+		window.delRecord = async function(type, id, btn) {
+			if (!confirm('确定删除该记录？')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const url = type === 'visitors' ? `/api/visitors.php?id=${id}` : `/api/${type}/${id}`;
+				const r = await fetch(url, { method: 'DELETE', headers: authHeaders() });
+				if (r.ok) { allData[type] = allData[type].filter(x => x.id !== id); updateCounts();
+					if (type === 'visitors') loadVisitorsPage(currentPage.visitors); else renderLogins(); }
+				else { alert('删除失败'); btn.textContent = '删除'; btn.disabled = false; }
+			} catch { alert('网络错误'); btn.textContent = '删除'; btn.disabled = false; }
+		};
+
+		window.delMessage = async function(id, btn) {
+			if (!confirm('确定删除该留言？关联的图片和语音也会被删除。')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const r = await fetch(`/api/messages.php/${id}`, { method: 'DELETE', headers: authHeaders() });
+				if (r.ok) { allData.messages = allData.messages.filter(x => x.id !== id); updateCounts(); renderMessages(); }
+				else { alert('删除失败'); btn.textContent = '删除留言'; btn.disabled = false; }
+			} catch { alert('网络错误'); btn.textContent = '删除留言'; btn.disabled = false; }
+		};
+
+		// ============ 照片墙管理 ============
+		let adminPhotos = [];
+		let photoBarrierEnabled = false;
+
+		async function loadPhotoConfig() {
+			try {
+				const r = await fetch('/api/photos.php?action=config');
+				const data = await r.json();
+				if (data.success && data.config) {
+					photoBarrierEnabled = data.config.barrier_enabled;
+					updateBarrierToggle();
+				}
+			} catch {}
+		}
+
+		function updateBarrierToggle() {
+			const toggle = document.getElementById('photo-barrier-toggle');
+			const track = document.getElementById('barrier-track');
+			const thumb = document.getElementById('barrier-thumb');
+			const text = document.getElementById('barrier-text');
+			if (!toggle || !track || !thumb || !text) return;
+
+			toggle.checked = photoBarrierEnabled;
+			if (photoBarrierEnabled) {
+				track.style.background = 'rgba(82,196,26,0.2)';
+				thumb.style.background = '#52c41a';
+				thumb.style.left = '22px';
+				text.textContent = '已开启';
+				text.style.color = '#52c41a';
+			} else {
+				track.style.background = 'rgba(220,38,38,0.2)';
+				thumb.style.background = '#dc2626';
+				thumb.style.left = '2px';
+				text.textContent = '已关闭';
+				text.style.color = '#dc2626';
+			}
+		}
+
+		window.togglePhotoBarrier = async function(input) {
+			try {
+				const r = await fetch('/api/photos.php?action=update_config', {
+					method: 'POST',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ barrier_enabled: input.checked })
+				});
+				const data = await r.json();
+				if (data.success) {
+					photoBarrierEnabled = data.config.barrier_enabled;
+					updateBarrierToggle();
+					alert(photoBarrierEnabled ? '照片墙屏障已开启，访客将无法看到照片' : '照片墙屏障已关闭，访客可以看到照片');
+				} else {
+					input.checked = !input.checked;
+					alert('保存失败');
+				}
+			} catch {
+				input.checked = !input.checked;
+				alert('网络错误');
+			}
+		};
+
+		function renderAdminPhotos() {
+			const grid = document.getElementById('admin-photos-grid');
+			if (adminPhotos.length === 0) {
+				grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--item_left_text_color);font-size:14px">暂无照片，点击右上角上传</div>';
+				return;
+			}
+			grid.innerHTML = adminPhotos.map(p => `
+				<div style="position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;cursor:pointer;background:var(--item_bg_color)" onclick="viewPhoto('${escapeHtml(p.url)}')">
+					<img src="${escapeHtml(p.url)}" style="width:100%;height:100%;object-fit:cover" />
+					<div style="position:absolute;bottom:0;left:0;right:0;padding:6px 8px;background:linear-gradient(to top,rgba(0,0,0,0.7),transparent);color:#fff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.title || '')}</div>
+					<button onclick="event.stopPropagation();delPhoto('${p.id}',this)" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(220,38,38,0.9);border:none;color:#fff;font-size:14px;cursor:pointer">×</button>
+				</div>
+			`).join('');
+		}
+
+		window.uploadPhotos = async function(input) {
+			if (!input.files || input.files.length === 0) return;
+			const formData = new FormData();
+			Array.from(input.files).forEach((f, i) => formData.append('file' + i, f));
+			try {
+				const r = await fetch('/api/photos.php?action=upload', {
+					method: 'POST', headers: authHeaders(), body: formData
+				});
+				const data = await r.json();
+				if (r.ok && data.success) {
+					alert(`成功上传 ${data.uploaded} 张照片`);
+					loadAdminPhotos();
+				} else {
+					alert('上传失败');
+				}
+			} catch { alert('网络错误'); }
+			input.value = '';
+		};
+
+		window.delPhoto = async function(id, btn) {
+			if (!confirm('确定删除这张照片？')) return;
+			btn.disabled = true;
+			try {
+				const r = await fetch('/api/photos.php?action=delete&id=' + id, {
+					method: 'DELETE', headers: authHeaders()
+				});
+				if (r.ok) { loadAdminPhotos(); }
+				else { alert('删除失败'); btn.disabled = false; }
+			} catch { alert('网络错误'); btn.disabled = false; }
+		};
+
+		window.viewPhoto = function(url) {
+			window.open(url, '_blank');
+		};
+
+		async function loadAdminPhotos() {
+			try {
+				const r = await fetch('/api/photos.php?action=list');
+				const data = await r.json();
+				adminPhotos = data.photos || [];
+				const cntEl = document.getElementById('cnt-photos');
+				if (cntEl) cntEl.textContent = adminPhotos.length;
+				renderAdminPhotos();
+			} catch {}
+			loadPhotoConfig();
+		}
+
+		// ============ 商品管理 ============
+		let shopProducts = [];
+		let shopOrders = [];
+		let editingProduct = null;
+
+		function renderProducts() {
+			const tbody = document.getElementById('products-tbody');
+			if (shopProducts.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px">暂无商品，点击右上角新增</td></tr>';
+				return;
+			}
+			tbody.innerHTML = shopProducts.map(p => {
+				const stock = (p.keys || []).length;
+				let imgHtml;
+				if (p.image) {
+					imgHtml = `<img src="${escapeHtml(p.image)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px" />`;
+				} else {
+					imgHtml = `<div style="width:50px;height:50px;border-radius:6px;background:linear-gradient(135deg,var(--purple_text_color),#ff9b6b);display:flex;align-items:center;justify-content:center;font-size:20px">🎁</div>`;
+				}
+				return `<tr>
+					<td>${imgHtml}</td>
+					<td>${escapeHtml(p.name)}</td>
+					<td>${escapeHtml(p.category || '')}</td>
+					<td style="color:var(--purple_text_color);font-weight:600">¥${p.price}</td>
+					<td>${stock}</td>
+					<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(p.description || '')}">${escapeHtml(p.description || '')}</td>
+					<td>
+						<button class="action-btn save" onclick="editProduct('${p.id}')">编辑</button>
+						<button class="action-btn del" onclick="delProduct('${p.id}',this)">删除</button>
+					</td>
+				</tr>`;
+			}).join('');
+		}
+
+		window.openProductModal = function() {
+			editingProduct = null;
+			showProductModal();
+		};
+
+		window.editProduct = function(id) {
+			const p = shopProducts.find(x => x.id === id);
+			if (!p) return;
+			editingProduct = p;
+			showProductModal();
+		};
+
+		function showProductModal() {
+			const p = editingProduct || { name: '', description: '', price: 0, category: '', image: '', keys: [] };
+			const imgPreview = p.image ? `<img src="${escapeHtml(p.image)}" style="width:60px;height:60px;object-fit:cover;border-radius:8px" />` : '<div style="width:60px;height:60px;border-radius:8px;background:rgba(128,128,128,0.15);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--item_left_text_color)">🎁</div>';
+			const html = `
+				<div class="buy-modal active" id="product-modal">
+					<div class="buy-box">
+						<h3>${editingProduct ? '编辑商品' : '新增商品'}</h3>
+						<div class="form-group">
+							<label>商品图片</label>
+							<div style="display:flex;align-items:center;gap:12px">
+								<div id="img-preview">${imgPreview}</div>
+								<div>
+									<input type="file" id="p-image" accept="image/*" style="display:none" onchange="uploadProductImage(this)" />
+									<button class="action-btn save" onclick="document.getElementById('p-image').click()">上传图片</button>
+								</div>
+							</div>
+						</div>
+						<div class="form-group"><label>商品名称</label><input type="text" id="p-name" value="${escapeHtml(p.name || '')}" /></div>
+						<div class="form-group"><label>分类</label><input type="text" id="p-category" value="${escapeHtml(p.category || '')}" placeholder="如：会员/软件/游戏" /></div>
+						<div class="form-group"><label>价格（元）</label><input type="number" step="0.01" id="p-price" value="${p.price || 0}" /></div>
+						<div class="form-group"><label>描述</label><textarea id="p-desc" rows="2">${escapeHtml(p.description || '')}</textarea></div>
+						<div class="form-group">
+							<label>${editingProduct ? '追加卡密（每行一个，不影响已有库存）' : '卡密库存（每行一个）'}</label>
+							<textarea id="p-keys" rows="5" style="font-family:monospace;font-size:13px" placeholder="每行一个卡密&#10;KEY-001&#10;KEY-002&#10;KEY-003"></textarea>
+							${editingProduct ? `<div style="font-size:12px;color:var(--item_left_text_color);margin-top:4px">当前库存: ${(p.keys||[]).length} 个</div>` : ''}
+						</div>
+						<div class="buy-btns">
+							<button class="btn-cancel" onclick="closeProductModal()">取消</button>
+							<button class="btn-confirm" onclick="saveProduct()">保存</button>
+						</div>
+					</div>
+				</div>`;
+			const old = document.getElementById('product-modal');
+			if (old) old.remove();
+			document.body.insertAdjacentHTML('beforeend', html);
+		}
+
+		window.uploadProductImage = async function(input) {
+			const file = input.files[0];
+			if (!file) return;
+			const formData = new FormData();
+			formData.append('image', file);
+			try {
+				const r = await fetch(authUrl('./api/shop.php?action=admin/upload_image'), {
+					method: 'POST',
+					headers: authHeaders(),
+					body: formData
+				});
+				const data = await r.json();
+				if (data.success) {
+					document.getElementById('img-preview').innerHTML = `<img src="${data.url}" style="width:60px;height:60px;object-fit:cover;border-radius:8px" />`;
+					document.getElementById('img-preview').dataset.url = data.url;
+				} else {
+					alert(data.error || '上传失败');
+				}
+			} catch { alert('网络错误'); }
+		};
+
+		window.closeProductModal = function() {
+			const m = document.getElementById('product-modal');
+			if (m) m.remove();
+		};
+
+		window.saveProduct = async function() {
+			const name = document.getElementById('p-name').value.trim();
+			const description = document.getElementById('p-desc').value.trim();
+			const price = parseFloat(document.getElementById('p-price').value) || 0;
+			const category = document.getElementById('p-category').value.trim();
+			const keysText = document.getElementById('p-keys').value.trim();
+			const imgEl = document.getElementById('img-preview');
+			const imageUrl = imgEl ? (imgEl.dataset.url || imgEl.querySelector('img')?.src || '') : '';
+
+			if (!name) { alert('请输入商品名称'); return; }
+
+			console.log('[saveProduct] 提交数据:', { name, description, price, category, keysText, imageUrl });
+
+			try {
+				if (editingProduct) {
+					// 编辑商品用JSON PUT
+					const body = { id: editingProduct.id, name, description, price, category, image: imageUrl };
+					if (keysText) body.newKeys = keysText;
+					console.log('[saveProduct] PUT 编辑请求:', body);
+					const r = await fetch(authUrl('./api/shop.php?action=admin/product'), {
+						method: 'PUT',
+						headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+						body: JSON.stringify(body)
+					});
+					console.log('[saveProduct] PUT 响应:', r.status, r.statusText);
+					if (r.ok) {
+						alert('✓ 商品已更新');
+						closeProductModal();
+						loadShopProducts();
+					} else {
+						const errData = await r.json().catch(() => ({}));
+						console.error('[saveProduct] PUT 错误:', errData);
+						alert(errData.error || ('保存失败 (HTTP ' + r.status + ')'));
+					}
+				} else {
+					// 新增商品用FormData（支持图片上传）
+					const formData = new FormData();
+					formData.append('name', name);
+					formData.append('description', description);
+					formData.append('price', price);
+					formData.append('category', category);
+					formData.append('keys', keysText);
+					// 如果已通过上传按钮上传了图片，传递URL
+					if (imageUrl) {
+						console.log('[saveProduct] 使用图片URL:', imageUrl);
+						formData.append('image_url', imageUrl);
+					}
+					const fileInput = document.getElementById('p-image');
+					if (fileInput.files[0]) {
+						console.log('[saveProduct] 附带图片文件:', fileInput.files[0].name);
+						formData.append('image', fileInput.files[0]);
+					}
+					console.log('[saveProduct] POST 新增请求 FormData 条目数:', formData && formData.entries ? '...' : 'N/A');
+
+					const r = await fetch(authUrl('./api/shop.php?action=admin/product'), {
+						method: 'POST',
+						headers: authHeaders(),
+						body: formData
+					});
+					console.log('[saveProduct] POST 响应:', r.status, r.statusText);
+					if (r.ok) {
+						try { const d = await r.json(); console.log('[saveProduct] 返回数据:', d); } catch(e) {}
+						alert('✓ 商品已添加');
+						closeProductModal();
+						loadShopProducts();
+					} else {
+						const errData = await r.json().catch(async () => ({ error: await r.text() }));
+						console.error('[saveProduct] POST 错误:', errData);
+						alert(errData.error || ('保存失败 (HTTP ' + r.status + ')'));
+					}
+				}
+			} catch(e) {
+				console.error('[saveProduct] 异常:', e);
+				alert('网络错误: ' + (e && e.message ? e.message : e));
+			}
+		};
+
+		window.delProduct = async function(id, btn) {
+			if (!confirm('确定删除该商品？')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const r = await fetch(authUrl(`./api/shop.php?action=admin/product&id=${id}`), { method: 'DELETE', headers: authHeaders() });
+				if (r.ok) { loadShopProducts(); }
+				else { alert('删除失败'); btn.textContent = '删除'; btn.disabled = false; }
+			} catch { alert('网络错误'); btn.textContent = '删除'; btn.disabled = false; }
+		};
+
+		async function loadShopProducts() {
+			try {
+				const r = await fetch(authUrl('./api/shop.php?action=admin/products'), { headers: authHeaders() });
+				if (r.status === 401) { localStorage.removeItem('admin_token'); window.location.href = './login.html'; return; }
+				const data = await r.json();
+				shopProducts = data.products || [];
+				const cntEl = document.getElementById('cnt-products');
+				if (cntEl) cntEl.textContent = shopProducts.length;
+				renderProducts();
+			} catch(e) {
+				console.error('加载商品失败:', e);
+			}
+		}
+
+		// ============ 订单管理 ============
+		function renderOrders() {
+			try {
+				const tbody = document.getElementById('orders-tbody');
+				if (!tbody) return;
+				const pendingCount = shopOrders.filter(o => o.status === 'pending').length;
+				const cntDisplay = document.getElementById('cnt-orders-display');
+				const cntPending = document.getElementById('cnt-orders-pending');
+				if (cntDisplay) cntDisplay.textContent = shopOrders.length;
+				if (cntPending) cntPending.textContent = pendingCount;
+
+				if (shopOrders.length === 0) {
+					tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--item_left_text_color)">📭 暂无订单数据<br><span style="font-size:12px;opacity:0.6">用户下单后将在此处显示，您可以进行审核和发卡操作</span></td></tr>';
+					const pager = document.getElementById('orders-pager');
+					if (pager) pager.innerHTML = '';
+					return;
+				}
+				const start = (currentPage.shopOrders - 1) * PAGE_SIZE;
+				const slice = shopOrders.slice(start, start + PAGE_SIZE);
+				tbody.innerHTML = slice.map(o => {
+					let statusHtml, actionHtml;
+					if (o.status === 'completed') {
+						statusHtml = '<span style="color:#22c55e;font-weight:600">✅ 已完成</span>';
+						actionHtml = `<button class="action-btn del" onclick="delOrder('${o.id}',this)" style="font-size:12px">删除</button>`;
+					} else if (o.status === 'pending') {
+						statusHtml = '<span style="color:#f59e0b;font-weight:600">⏳ 待审核</span>';
+						actionHtml = `<button class="action-btn save" onclick="confirmOrder('${o.id}',this)" style="font-size:12px;font-weight:700;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;padding:6px 14px">✓ 审核发卡</button><button class="action-btn del" onclick="delOrder('${o.id}',this)" style="font-size:12px;margin-left:4px">拒绝</button>`;
+					} else {
+						statusHtml = '<span style="color:#f59e0b;font-weight:600">处理中</span>';
+						actionHtml = `<button class="action-btn del" onclick="delOrder('${o.id}',this)" style="font-size:12px">删除</button>`;
+					}
+					// 安全处理keys字段，可能是数组或字符串
+					let keysStr = '';
+					if (Array.isArray(o.keys)) {
+						keysStr = o.keys.join(', ');
+					} else if (typeof o.keys === 'string') {
+						keysStr = o.keys;
+					} else if (typeof o.key === 'string') {
+						keysStr = o.key;
+					}
+					return `<tr>
+					<td style="font-family:monospace;font-size:12px">${escapeHtml(o.id)}</td>
+					<td>${escapeHtml(o.productName || '')}</td>
+					<td>${escapeHtml(o.quantity != null ? o.quantity : 1)}</td>
+					<td style="color:var(--purple_text_color);font-weight:600">¥${o.price != null ? o.price : 0}</td>
+					<td>${escapeHtml(o.email || o.contact || '')}</td>
+					<td style="font-family:monospace;font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(keysStr)}">${escapeHtml(keysStr || '—')}</td>
+					<td style="white-space:nowrap;font-size:12px">${escapeHtml(o.time || '')}</td>
+					<td>${statusHtml}</td>
+					<td style="white-space:nowrap">${actionHtml}</td>
+				</tr>`;
+				}).join('');
+				renderPager('orders-pager', shopOrders.length, 'shopOrders');
+			} catch(e) {
+				console.error('renderOrders出错:', e);
+				const tbody = document.getElementById('orders-tbody');
+				if (tbody) {
+					tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#ef4444">渲染出错: ' + escapeHtml(e.message) + '</td></tr>';
+				}
+			}
+		}
+
+		window.confirmOrder = async function(id, btn) {
+			if (!confirm('确认该订单已支付并发放卡密？')) return;
+			btn.textContent = '处理中...'; btn.disabled = true;
+			try {
+				const r = await fetch(authUrl('./api/shop.php?action=admin/confirm_order'), {
+					method: 'POST',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ orderId: id })
+				});
+				const data = await r.json();
+				if (r.ok && data.success) {
+				alert('发卡成功！卡密已发送至用户邮箱: ' + ((data.keys||[]).join(', ')));
+				loadShopOrders();
+				loadShopProducts();
+				} else {
+					alert(data.error || '操作失败');
+					btn.textContent = '确认发卡'; btn.disabled = false;
+				}
+			} catch { alert('网络错误'); btn.textContent = '确认发卡'; btn.disabled = false; }
+		};
+
+		window.delOrder = async function(id, btn) {
+			if (!confirm('确定删除该订单？')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const r = await fetch(authUrl(`./api/shop.php?action=admin/order&id=${id}`), { method: 'DELETE', headers: authHeaders() });
+				if (r.ok) { loadShopOrders(); }
+				else { alert('删除失败'); btn.textContent = '删除'; btn.disabled = false; }
+			} catch { alert('网络错误'); btn.textContent = '删除'; btn.disabled = false; }
+		};
+
+		async function loadShopOrders() {
+			try {
+				const r = await fetch(authUrl('./api/shop.php?action=admin/orders'), { headers: authHeaders() });
+				if (r.status === 401) { localStorage.removeItem('admin_token'); window.location.href = './login.html'; return; }
+				const text = await r.text();
+				const data = JSON.parse(text);
+				if (data.success && Array.isArray(data.orders)) {
+					shopOrders = data.orders;
+				} else if (data.orders && Array.isArray(data.orders)) {
+					shopOrders = data.orders;
+				}
+				const cntEl = document.getElementById('cnt-orders');
+				if (cntEl) cntEl.textContent = shopOrders.length;
+				renderOrders();
+			} catch(e) {
+				console.error('加载订单失败:', e);
+				if (shopOrders.length === 0) {
+					renderOrders();
+				}
+			}
+		}
+
+		// ============ 加载数据 ============
+		function updateCounts() {
+			document.getElementById('cnt-visitors').textContent = visitorTotal;
+			document.getElementById('cnt-logins').textContent = allData.logins.length;
+			document.getElementById('cnt-messages').textContent = allData.messages.length;
+			document.getElementById('cnt-tool-users').textContent = allData.toolUsers.length;
+			document.getElementById('cnt-changelog').textContent = allData.changelog.length;
+			const cntP = document.getElementById('cnt-particle');
+			if (cntP) cntP.textContent = allData.particle.length;
+			const cntK = document.getElementById('cnt-cardkeys');
+			if (cntK) cntK.textContent = allData.cardkeys.length;
+			document.getElementById('stat-visitors').textContent = visitorTotal;
+			document.getElementById('stat-logins').textContent = allData.logins.length;
+			document.getElementById('stat-messages').textContent = allData.messages.length;
+			const statK = document.getElementById('stat-keys');
+			if (statK) statK.textContent = allData.keyStats.total || 0;
+		}
+
+		async function loadAll() {
+			try {
+				const [lr, mr, tur, clr, ctr, ptr] = await Promise.all([
+					fetch(authUrl('/api/logins.php'), { headers: authHeaders() }),
+					fetch('/api/messages.php'),
+					fetch(authUrl('/api/tool_login.php?action=users'), { headers: authHeaders() }),
+					fetch('/api/changelog.php'),
+					fetch('/api/contact.php'),
+					fetch(authUrl('/api/particle.php'), { headers: authHeaders() })
+				]);
+				if (lr.status === 401) {
+					localStorage.removeItem('admin_token'); window.location.href = './login.html'; return;
+				}
+				const lct = lr.headers.get('content-type') || '';
+				const mct = mr.headers.get('content-type') || '';
+				if (!lct.includes('application/json') || !mct.includes('application/json')) {
+					const errMsg = '后端服务异常。请检查宝塔反向代理是否配置正确，以及Node.js后端是否已启动';
+					document.getElementById('visitors-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#d97706">' + errMsg + '</td></tr>';
+					document.getElementById('logins-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#d97706">' + errMsg + '</td></tr>';
+					document.getElementById('messages-box').innerHTML = '<div class="empty-tip" style="color:#d97706">' + errMsg + '</div>';
+					return;
+				}
+				allData.logins = await lr.json();
+				allData.messages = await mr.json();
+				try {
+					if (tur.ok) {
+						const tuData = await tur.json();
+						allData.toolUsers = tuData.users || [];
+					} else {
+						allData.toolUsers = [];
+					}
+				} catch (e) { allData.toolUsers = []; }
+				try {
+					if (clr.ok) {
+						allData.changelog = await clr.json();
+					} else {
+						allData.changelog = [];
+					}
+				} catch (e) { allData.changelog = []; }
+				try {
+					if (ctr.ok) {
+						allData.contact = await ctr.json();
+					} else {
+						allData.contact = {};
+					}
+				} catch (e) { allData.contact = {}; }
+				try {
+					if (ptr.ok) {
+						allData.particle = await ptr.json();
+					} else {
+						allData.particle = [];
+					}
+				} catch (e) { allData.particle = []; }
+				updateCounts();
+				renderLogins(); renderMessages(); renderToolUsers(); renderChangelog(); renderContact(); renderParticle();
+				renderDashboard();
+				loadVisitorsPage(1);
+				loadKeyTypes();
+				loadCardKeys();
+				loadVisitorLocations();
+			} catch (err) {
+				const errMsg = err.message && err.message.includes('后端') ? err.message : '加载失败，请刷新重试。请确认api目录下的PHP文件已正确上传';
+				document.getElementById('visitors-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#d97706">' + errMsg + '</td></tr>';
+				document.getElementById('logins-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#d97706">' + errMsg + '</td></tr>';
+				document.getElementById('messages-box').innerHTML = '<div class="empty-tip" style="color:#d97706">' + errMsg + '</div>';
+			}
+		}
+
+		async function loadVisitorsPage(page) {
+			try {
+				const resp = await fetch('/api/visitors.php?page=' + page + '&pageSize=20', { headers: authHeaders() });
+				if (resp.status === 401) { localStorage.removeItem('admin_token'); window.location.href = './login.html'; return; }
+				const data = await resp.json();
+				allData.visitors = data.data || [];
+				visitorTotal = data.total || 0;
+				currentPage.visitors = page;
+				renderVisitors();
+				updateCounts();
+				renderBarChart();
+			} catch(e) {
+				allData.visitors = [];
+				renderVisitors();
+			}
+		}
+
+		// ============ 初始化加载 ============
+		async function initAdmin() {
+			try {
+				await loadAll();
+				loadAdminPhotos();
+				loadShopProducts();
+			} catch(e) {
+				console.error('初始化加载失败:', e);
+			}
+			try {
+				await loadShopOrders();
+			} catch(e) {
+				console.error('订单加载失败:', e);
+				renderOrders();
+			}
+		}
+		initAdmin();
+
+		// ============ 访客地址 ============
+		let visitorLocationsTotal = 0;
+
+		async function loadVisitorLocations() {
+			try {
+				const resp = await fetch('/api/visitors.php?page=' + currentPage.visitorLocations + '&pageSize=20', { headers: authHeaders() });
+				if (resp.status === 401) { localStorage.removeItem('admin_token'); window.location.href = './login.html'; return; }
+				const data = await resp.json();
+				const rawData = data.data || [];
+				const enrichedData = await Promise.all(rawData.map(v => enrichVisitorLocation(v)));
+				allData.visitorLocations = enrichedData;
+				visitorLocationsTotal = data.total || 0;
+				updateVisitorLocationsCount();
+				renderVisitorLocations();
+			} catch(e) {
+				allData.visitorLocations = [];
+				renderVisitorLocations();
+			}
+		}
+
+		async function enrichVisitorLocation(visitor) {
+			if (!visitor.ip || visitor.ip === '127.0.0.1' || visitor.ip === '::1') {
+				return { ...visitor, fullLocation: '本地网络', apizeroData: null };
+			}
+
+			try {
+				const resp = await fetch('https://v1.apizero.cn/api/ip-pro?ip=' + encodeURIComponent(visitor.ip), { timeout: 5000 });
+				const data = await resp.json();
+				if (data.code === 0 && data.data) {
+					return { ...visitor, fullLocation: formatLocation(data.data), apizeroData: data.data };
+				}
+			} catch(e) {}
+
+			return { ...visitor, fullLocation: visitor.location || '未知', apizeroData: null };
+		}
+
+		function formatLocation(data) {
+			const parts = [];
+			if (data.country) parts.push(data.country);
+			if (data.province) parts.push(data.province);
+			if (data.city) parts.push(data.city);
+			if (data.district) parts.push(data.district);
+			if (data.street) parts.push(data.street);
+			return parts.join(' ') || '未知';
+		}
+
+		function updateVisitorLocationsCount() {
+			const cntEl = document.getElementById('cnt-visitor-locations');
+			if (cntEl) cntEl.textContent = visitorLocationsTotal;
+		}
+
+		function renderVisitorLocations() {
+			const tbody = document.getElementById('visitor-locations-tbody');
+			if (!tbody) return;
+
+			const searchText = document.getElementById('location-search')?.value.toLowerCase() || '';
+			let data = allData.visitorLocations || [];
+
+			if (searchText) {
+				data = data.filter(v => {
+					const ip = (v.ip || '').toLowerCase();
+					const location = (v.fullLocation || '').toLowerCase();
+					const country = ((v.apizeroData && v.apizeroData.country) || '').toLowerCase();
+					const province = ((v.apizeroData && v.apizeroData.province) || '').toLowerCase();
+					const city = ((v.apizeroData && v.apizeroData.city) || '').toLowerCase();
+					return ip.includes(searchText) || location.includes(searchText) ||
+						country.includes(searchText) || province.includes(searchText) || city.includes(searchText);
+				});
+			}
+
+			const start = (currentPage.visitorLocations - 1) * PAGE_SIZE;
+			const slice = data.slice(start, start + PAGE_SIZE);
+
+			if (slice.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px">暂无数据</td></tr>';
+				document.getElementById('visitor-locations-pager').innerHTML = '';
+				return;
+			}
+
+			tbody.innerHTML = slice.map(v => {
+				const d = v.apizeroData || {};
+				const risk = d.risk || {};
+				const riskClass = risk.level === '无风险' ? 'green' : (risk.level === '低风险' ? 'yellow' : 'red');
+				const riskText = risk.level || '未知';
+				const isProxy = risk.is_proxy ? '✅' : '❌';
+
+				return `<tr>
+					<td class="ip-cell">${escapeHtml(v.ip)}</td>
+					<td>${escapeHtml(d.country || '--')}</td>
+					<td>${escapeHtml(d.province || '--')}</td>
+					<td>${escapeHtml(d.city || '--')}</td>
+					<td>${escapeHtml(d.district || '--')}</td>
+					<td>${escapeHtml(d.street || '--')}</td>
+					<td>${escapeHtml(d.isp || '--')}</td>
+					<td>${escapeHtml(d.time_zone || '--')}</td>
+					<td>
+						<div style="font-size:12px">
+							<div class="${riskClass}">${riskText}</div>
+							<div style="color:var(--item_left_text_color);font-size:11px">代理: ${isProxy} | 分数: ${risk.score || 0}</div>
+						</div>
+					</td>
+					<td style="white-space:nowrap">${formatTime(v.time || v.ts)}</td>
+					<td>
+						${d.latitude && d.longitude ? `<button class="action-btn" onclick="openMap('${d.latitude}','${d.longitude}','${escapeHtml(v.fullLocation||'')}')">地图</button>` : ''}
+					</td>
+				</tr>`;
+			}).join('');
+
+			renderPager('visitor-locations-pager', data.length, 'visitorLocations');
+		}
+
+		window.filterVisitorLocations = function() {
+			currentPage.visitorLocations = 1;
+			renderVisitorLocations();
+		};
+
+		window.refreshVisitorLocations = function() {
+			loadVisitorLocations();
+		};
+
+		window.openMap = function(lat, lng, name) {
+			window.open(`https://www.google.com/maps?q=${lat},${lng}&z=15`, '_blank');
+		};
+
+		// ============ 统计仪表盘 ============
+		let barChartInstance = null;
+
+		function renderDashboard() {
+			renderBarChart();
+		}
+
+		function renderBarChart() {
+			const ctx = document.getElementById('bar-chart');
+			if (!ctx) return;
+			const ks = allData.keyStats || {};
+			const keyUsed = ks.used || 0;
+			const keyUnused = ks.unused || 0;
+
+			const data = {
+				labels: ['访客记录', '登录记录', '留言总数', '卡密已用', '卡密未用'],
+				datasets: [{
+					label: '数量',
+					data: [visitorTotal, allData.logins.length, allData.messages.length, keyUsed, keyUnused],
+					backgroundColor: ['#667eea', '#00d9a3', '#ffd700', '#ff6b6b', '#4ecdc4'],
+					borderWidth: 2,
+					borderColor: 'rgba(255,255,255,0.1)',
+					borderRadius: 8
+				}]
+			};
+			if (barChartInstance) barChartInstance.destroy();
+			barChartInstance = new Chart(ctx, {
+				type: 'bar',
+				data: data,
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: { display: false },
+						tooltip: { backgroundColor: 'rgba(30,41,59,0.9)', titleColor: '#fff', bodyColor: '#fff' }
+					},
+					scales: {
+						y: {
+							beginAtZero: true,
+							ticks: { color: '#64748b', font: { size: 12 } },
+							grid: { color: 'rgba(100,116,139,0.1)' }
+						},
+						x: {
+							ticks: { color: '#64748b', font: { size: 12 } },
+							grid: { display: false }
+						}
+					}
+				}
+			});
+		}
+
+		// ============ 个人信息 ============
+		function renderPayQrPreviews(profile) {
+			if (!profile) return;
+			try {
+				if (profile.pay_wx_qr) {
+					var wxPreview = document.getElementById('pay-wx-preview');
+					if (wxPreview) {
+						wxPreview.style.background = "url('" + profile.pay_wx_qr + "') center/cover no-repeat";
+						wxPreview.style.border = '2px solid rgba(34,197,94,0.4)';
+						wxPreview.textContent = '';
+					}
+				}
+				if (profile.pay_zfb_qr) {
+					var zfbPreview = document.getElementById('pay-zfb-preview');
+					if (zfbPreview) {
+						zfbPreview.style.background = "url('" + profile.pay_zfb_qr + "') center/cover no-repeat";
+						zfbPreview.style.border = '2px solid rgba(34,197,94,0.4)';
+						zfbPreview.textContent = '';
+					}
+				}
+			} catch(e) {}
+		}
+
+		async function loadProfileInfo() {
+			try {
+				const r = await fetch('/api/profile.php?action=get');
+				const data = await r.json();
+				if (data.success && data.profile) {
+					var p = data.profile;
+					var el = document.getElementById('profile-avatar-input'); if (el) el.value = p.avatar || '';
+					var avatarPreview = document.getElementById('avatar-preview-box');
+					if (avatarPreview && p.avatar) {
+						avatarPreview.style.background = "url('" + p.avatar + "') center/cover no-repeat";
+					}
+						if (p.contact) {
+					el = document.getElementById('profile-qq-input'); if (el) el.value = p.contact.qq || '';
+					el = document.getElementById('profile-wechat-input'); if (el) el.value = p.contact.wechat || '';
+					el = document.getElementById('profile-email-input'); if (el) el.value = p.contact.email || '';
+					el = document.getElementById('profile-tg-input'); if (el) el.value = p.contact.telegram || '';
+				}
+				// 加载收款码预览
+				renderPayQrPreviews(data.profile);
+				// 加载「有话对你说」卡片设置
+				var nb = data.profile.notice_box || {};
+				var nbEnabled = document.getElementById('nb-enabled');
+				if (nbEnabled) nbEnabled.checked = nb.enabled !== false;
+				var nbTitle = document.getElementById('nb-title');
+				if (nbTitle) nbTitle.value = nb.title || '';
+				var nbContent = document.getElementById('nb-content');
+				if (nbContent) nbContent.value = nb.content || '';
+				// 加载联系页面HTML状态
+				loadContactHtmlStatus();
+				// 加载 AI 配置
+				var ai = data.profile.ai_config || {};
+				var mode = ai.mode || 'local';
+				var localRadio = document.getElementById('ai-mode-local');
+				var extRadio = document.getElementById('ai-mode-external');
+				if (localRadio) localRadio.checked = (mode === 'local');
+				if (extRadio) extRadio.checked = (mode === 'external');
+				toggleAIExternalSection(mode);
+				var aiBase = document.getElementById('ai-base-url');
+				if (aiBase) aiBase.value = ai.base_url || '';
+				var aiKey = document.getElementById('ai-api-key');
+				if (aiKey) aiKey.value = ai.api_key || '';
+				var aiModel = document.getElementById('ai-model');
+				if (aiModel) aiModel.value = ai.model || '';
+				var aiPrompt = document.getElementById('ai-system-prompt');
+				if (aiPrompt) aiPrompt.value = ai.system_prompt || '';
+				var aiFb = document.getElementById('ai-fallback-local');
+				if (aiFb) aiFb.checked = ai.fallback_local !== false;
+			}
+		} catch(e) {}
+	}
+
+	async function loadAIConfig() {
+		try {
+			const r = await fetch('/api/profile.php?action=get');
+			const data = await r.json();
+			var ai = (data && data.profile && data.profile.ai_config) ? data.profile.ai_config : {};
+			var mode = ai.mode || 'local';
+			var localRadio = document.getElementById('ai-mode-local');
+			var extRadio = document.getElementById('ai-mode-external');
+			if (localRadio) localRadio.checked = (mode === 'local');
+			if (extRadio) extRadio.checked = (mode === 'external');
+			toggleAIExternalSection(mode);
+			var aiBase = document.getElementById('ai-base-url');
+			if (aiBase) aiBase.value = ai.base_url || '';
+			var aiKey = document.getElementById('ai-api-key');
+			if (aiKey) aiKey.value = ai.api_key || '';
+			var aiModel = document.getElementById('ai-model');
+			if (aiModel) aiModel.value = ai.model || '';
+			var aiPrompt = document.getElementById('ai-system-prompt');
+			if (aiPrompt) aiPrompt.value = ai.system_prompt || '';
+			var aiFb = document.getElementById('ai-fallback-local');
+			if (aiFb) aiFb.checked = ai.fallback_local !== false;
+			var t = document.getElementById('ai-test-result');
+			if (t) t.innerHTML = '';
+		} catch(e) {}
+	}
+
+		async function uploadAvatar(input) {
+			if (!input || !input.files || input.files.length === 0) return;
+			const fd = new FormData();
+			fd.append('avatar', input.files[0]);
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=upload_avatar'), {
+					method: 'POST',
+					headers: authHeaders(),
+					body: fd
+				});
+				const data = await r.json();
+				if (data.success) {
+					const url = data.avatar || '';
+					const inputEl = document.getElementById('profile-avatar-input');
+					if (inputEl) inputEl.value = url;
+					const preview = document.getElementById('avatar-preview-box');
+					if (preview) preview.style.background = "url('" + url + "') center/cover no-repeat";
+					alert('✅ 头像上传成功，记得点击下方「保存设置」让首页生效');
+				} else {
+					alert('❌ 上传失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			} finally {
+				input.value = '';
+			}
+		}
+
+		async function uploadPayQr(input, type) {
+			if (!input || !input.files || input.files.length === 0) return;
+			const fd = new FormData();
+			fd.append('qr', input.files[0]);
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=upload_pay_qr&type=' + type), {
+					method: 'POST',
+					headers: authHeaders(),
+					body: fd
+				});
+				const data = await r.json();
+				if (data.success) {
+					const preview = document.getElementById('pay-' + type + '-preview');
+					if (preview) {
+						preview.style.background = "url('" + data.url + "') center/cover no-repeat";
+						preview.style.border = '2px solid rgba(34,197,94,0.4)';
+						preview.textContent = '';
+					}
+					alert('✅ 收款码上传成功');
+				} else {
+					alert('❌ 上传失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			} finally {
+				input.value = '';
+			}
+		}
+
+		// ============ 商城信息设置 ============
+		async function saveShopSettings() {
+			var mergedProfile = null;
+			try {
+				var r0 = await fetch('/api/profile.php?action=get');
+				var d0 = await r0.json();
+				mergedProfile = (d0 && d0.success && d0.profile) ? d0.profile : null;
+			} catch(e) {}
+			var payload = {
+				registerDate: (document.getElementById('shop-regdate-input') || {}).value ? document.getElementById('shop-regdate-input').value.trim() : '',
+				notice: (document.getElementById('shop-notice-input') || {}).value ? document.getElementById('shop-notice-input').value.trim() : ''
+			};
+			if (mergedProfile) {
+				if (typeof mergedProfile.avatar !== 'undefined') payload.avatar = mergedProfile.avatar;
+				if (typeof mergedProfile.contact !== 'undefined') payload.contact = mergedProfile.contact;
+				if (typeof mergedProfile.background !== 'undefined') payload.background = mergedProfile.background;
+				if (Array.isArray(mergedProfile.backgrounds)) payload.backgrounds = mergedProfile.backgrounds;
+				if (typeof mergedProfile.notice_box !== 'undefined') payload.notice_box = mergedProfile.notice_box;
+				if (typeof mergedProfile.pay_qrcodes !== 'undefined') payload.pay_qrcodes = mergedProfile.pay_qrcodes;
+				if (typeof mergedProfile.pay_wx_qr !== 'undefined') payload.pay_wx_qr = mergedProfile.pay_wx_qr;
+				if (typeof mergedProfile.pay_zfb_qr !== 'undefined') payload.pay_zfb_qr = mergedProfile.pay_zfb_qr;
+				if (typeof mergedProfile.ai_config !== 'undefined') payload.ai_config = mergedProfile.ai_config;
+			}
+			try {
+				const r = await fetch('/api/profile.php?action=save', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify(payload)
+				});
+				const data = await r.json();
+				alert(data.success ? '✅ 商城设置保存成功' : '❌ 保存失败：' + (data.message || ''));
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		// ============ 联系页面 HTML 上传 ============
+		async function loadContactHtmlStatus() {
+			var el = document.getElementById('contact-html-status');
+			if (!el) return;
+			try {
+				const r = await fetch('/api/profile.php?action=get_contact_html');
+				const data = await r.json();
+				if (data && data.success) {
+					const hasFile = data.exists && (data.size || 0) > 0;
+					const hasLegacy = !!data.legacy;
+					if (hasFile) {
+						el.textContent = '✅ 已上传HTML文件 (' + data.size + ' 字节)';
+						el.style.color = '#10b981';
+					} else if (hasLegacy) {
+						el.textContent = '⚠️ 使用旧版编辑器数据（建议重新上传HTML文件）';
+						el.style.color = '#f59e0b';
+					} else {
+						el.textContent = '使用默认联系方式卡片';
+						el.style.color = '#94a3b8';
+					}
+				} else {
+					el.textContent = '状态读取失败';
+					el.style.color = '#ef4444';
+				}
+			} catch(e) {
+				el.textContent = '状态读取失败';
+				el.style.color = '#ef4444';
+			}
+		}
+
+		async function uploadContactHtml(input) {
+			if (!input || !input.files || input.files.length === 0) return;
+			var file = input.files[0];
+			if (!/\.(html?|txt)$/i.test(file.name)) {
+				alert('❌ 请上传 .html 或 .htm 文件');
+				input.value = '';
+				return;
+			}
+			const fd = new FormData();
+			fd.append('html', file);
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=upload_contact_html'), {
+					method: 'POST',
+					headers: authHeaders(),
+					body: fd
+				});
+				const data = await r.json();
+				if (data.success) {
+					alert('✅ 上传成功！联系页面已更新');
+					loadContactHtmlStatus();
+				} else {
+					alert('❌ 上传失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			} finally {
+				input.value = '';
+			}
+		}
+
+		async function resetContactHtml() {
+			if (!confirm('确认恢复默认联系方式页面？当前上传的HTML将被删除。')) return;
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=reset_contact_html'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() }
+				});
+				const data = await r.json();
+				if (data.success) {
+					alert('✅ 已恢复默认页面');
+					loadContactHtmlStatus();
+				} else {
+					alert('❌ 操作失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		async function previewContactHtmlPage() {
+			try {
+				const r = await fetch('/api/profile.php?action=get_contact_html');
+				const data = await r.json();
+				const hasFile = data && data.success && data.exists && (data.size || 0) > 0;
+				if (hasFile) {
+					// 有上传的HTML文件：直接打开源文件，100% 原样显示
+					window.open('./uploads/contact_custom.html?t=' + Date.now(), '_blank');
+				} else {
+					// 没有上传的文件：打开 contact.html（会走默认卡片或旧版兼容）
+					window.open('./contact.html?preview=' + Date.now(), '_blank');
+				}
+			} catch(e) {
+				window.open('./contact.html?preview=' + Date.now(), '_blank');
+			}
+		}
+
+		async function saveProfileInfo() {
+			// 保存前先 GET 当前配置，确保 AI 助手/收款码等字段不会被覆盖
+			var mergedProfile = null;
+			try {
+				var r0 = await fetch('/api/profile.php?action=get');
+				var d0 = await r0.json();
+				mergedProfile = (d0 && d0.success && d0.profile) ? d0.profile : null;
+			} catch(e) {}
+			var payload = {
+				avatar: document.getElementById('profile-avatar-input').value.trim(),
+				contact: {
+					qq: document.getElementById('profile-qq-input').value.trim(),
+					wechat: document.getElementById('profile-wechat-input').value.trim(),
+					email: document.getElementById('profile-email-input').value.trim(),
+					telegram: document.getElementById('profile-tg-input').value.trim()
+				},
+				notice_box: {
+					enabled: document.getElementById('nb-enabled') ? document.getElementById('nb-enabled').checked : true,
+					title: document.getElementById('nb-title') ? document.getElementById('nb-title').value.trim() : '',
+					content: document.getElementById('nb-content') ? document.getElementById('nb-content').value.trim() : ''
+				}
+			};
+			if (mergedProfile) {
+				if (typeof mergedProfile.background !== 'undefined') payload.background = mergedProfile.background;
+				if (Array.isArray(mergedProfile.backgrounds)) payload.backgrounds = mergedProfile.backgrounds;
+				if (typeof mergedProfile.pay_qrcodes !== 'undefined') payload.pay_qrcodes = mergedProfile.pay_qrcodes;
+				if (typeof mergedProfile.pay_wx_qr !== 'undefined') payload.pay_wx_qr = mergedProfile.pay_wx_qr;
+				if (typeof mergedProfile.pay_zfb_qr !== 'undefined') payload.pay_zfb_qr = mergedProfile.pay_zfb_qr;
+				if (typeof mergedProfile.registerDate !== 'undefined') payload.registerDate = mergedProfile.registerDate;
+				if (typeof mergedProfile.notice !== 'undefined') payload.notice = mergedProfile.notice;
+				if (typeof mergedProfile.ai_config !== 'undefined') payload.ai_config = mergedProfile.ai_config;
+			}
+			try {
+				const r = await fetch('/api/profile.php?action=save', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify(payload)
+				});
+				const data = await r.json();
+				alert(data.success ? '✅ 保存成功' : '❌ 保存失败：' + (data.message || ''));
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		// ============ AI 配置（含连通性测试） ============
+		function toggleAIExternalSection(mode) {
+			var el = document.getElementById('ai-external-section');
+			if (!el) return;
+			if (mode === 'external') {
+				el.style.display = '';
+				el.style.opacity = '1';
+				el.style.pointerEvents = 'auto';
+			} else {
+				el.style.display = 'none';
+			}
+		}
+		(function bindAIRadio(){
+			['ai-mode-local','ai-mode-external'].forEach(function(id){
+				var r = document.getElementById(id);
+				if (!r) return;
+				r.addEventListener('change', function(){
+					if (r.checked) toggleAIExternalSection(r.value);
+				});
+			});
+		})();
+
+		function fillFreeApiPreset() {
+			if (document.getElementById('ai-base-url')) document.getElementById('ai-base-url').value = 'https://openai.good.hidns.vip/v1';
+			if (document.getElementById('ai-api-key')) document.getElementById('ai-api-key').value = 'https://github.com/smanx/free-api';
+			if (document.getElementById('ai-model')) document.getElementById('ai-model').value = 'qwen3.6-plus';
+			if (document.getElementById('ai-system-prompt')) document.getElementById('ai-system-prompt').value = '你是 xiaobing-bot，一个亲切友好的个人助手，请用简短自然的中文回答用户的问题。';
+			if (document.getElementById('ai-fallback-local')) document.getElementById('ai-fallback-local').checked = true;
+			if (document.getElementById('ai-mode-external')) { document.getElementById('ai-mode-external').checked = true; toggleAIExternalSection('external'); }
+		}
+
+		var AI_PRESETS = {
+			'grok':    { model: 'grok-4.20-fast',              prompt: '你是 xiaobing-bot，一个幽默风趣的助手，可以用轻松的语气回答问题。' },
+			'glm':     { model: 'z-ai/glm-5.1',                prompt: '你是 xiaobing-bot，一个专业但亲切的中文助手。' },
+			'kimi':    { model: 'moonshotai/kimi-k2.5',        prompt: '你是 xiaobing-bot，一个善于长文分析和总结的助手。' },
+			'deepseek':{ model: 'deepseek-ai/deepseek-v4-flash', prompt: '你是 xiaobing-bot，一个逻辑清晰、回答精准的助手。' },
+			'minimax': { model: 'minimaxai/minimax-m2.7',     prompt: '你是 xiaobing-bot，一个富有创意和情感的助手。' }
+		};
+		function fillPreset(name) {
+			var p = AI_PRESETS[name];
+			if (!p) return;
+			// base_url 和 api_key 与 free-api 共用，只切模型和提示词
+			if (document.getElementById('ai-base-url')) document.getElementById('ai-base-url').value = 'https://openai.good.hidns.vip/v1';
+			if (document.getElementById('ai-api-key')) document.getElementById('ai-api-key').value = 'https://github.com/smanx/free-api';
+			if (document.getElementById('ai-model')) document.getElementById('ai-model').value = p.model;
+			if (document.getElementById('ai-system-prompt')) document.getElementById('ai-system-prompt').value = p.prompt;
+			if (document.getElementById('ai-fallback-local')) document.getElementById('ai-fallback-local').checked = true;
+			if (document.getElementById('ai-mode-external')) { document.getElementById('ai-mode-external').checked = true; toggleAIExternalSection('external'); }
+		}
+
+		function buildAIConfigPayload() {
+			var modeEl = document.querySelector('input[name="ai-mode"]:checked');
+			var mode = modeEl ? modeEl.value : 'local';
+			return {
+				mode: mode,
+				base_url: document.getElementById('ai-base-url') ? document.getElementById('ai-base-url').value.trim() : '',
+				api_key: document.getElementById('ai-api-key') ? document.getElementById('ai-api-key').value.trim() : '',
+				model: document.getElementById('ai-model') ? document.getElementById('ai-model').value.trim() : '',
+				system_prompt: document.getElementById('ai-system-prompt') ? document.getElementById('ai-system-prompt').value : '',
+				fallback_local: document.getElementById('ai-fallback-local') ? document.getElementById('ai-fallback-local').checked : true
+			};
+		}
+
+		async function saveAIConfig() {
+			var payload = {};
+			try {
+				var r1 = await fetch('/api/profile.php?action=get');
+				var d1 = await r1.json();
+				var cur = (d1 && d1.success && d1.profile) ? d1.profile : {};
+				payload = {
+					avatar: cur.avatar || '',
+					registerDate: cur.registerDate || '',
+					notice: cur.notice || '',
+					contact: cur.contact || { qq:'', wechat:'', email:'', telegram:'' },
+					background: cur.background || '',
+					backgrounds: cur.backgrounds || [],
+					notice_box: cur.notice_box || { enabled:true, title:'有话对你说', content:'' },
+					pay_qrcodes: cur.pay_qrcodes || { wechat:'', alipay:'' },
+					ai_config: buildAIConfigPayload()
+				};
+			} catch(e) {
+				payload = { ai_config: buildAIConfigPayload() };
+			}
+			try {
+				const r = await fetch('/api/profile.php?action=save', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify(payload)
+				});
+				const data = await r.json();
+				alert(data.success ? '✅ AI 配置保存成功' : '❌ 保存失败：' + (data.message || data.error || ''));
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		async function testAIProxy() {
+			var out = document.getElementById('ai-test-result');
+			if (out) out.innerHTML = '<span style="color:#6366f1">⏳ 正在测试外部接口，并保存当前填写的配置...</span>';
+			var modeEl = document.querySelector('input[name="ai-mode"]:checked');
+			if (modeEl && modeEl.value !== 'external') {
+				if (out) out.innerHTML = '<span style="color:#f59e0b">⚠️ 当前为「本地问答库模式」，请先切换到外部接口模式再测试。</span>';
+				return;
+			}
+			var cfg = buildAIConfigPayload();
+			try {
+				// 先把用户当前填写的配置 直接 持久化保存（不再回滚），避免"测试成功但聊天还用旧配置"
+				var profile = {};
+				try {
+					var r0 = await fetch('/api/profile.php?action=get');
+					var d0 = await r0.json();
+					profile = (d0 && d0.profile) || {};
+				} catch(e) {}
+				profile.ai_config = cfg;
+				var saveOK = false;
+				try {
+					var rs = await fetch('/api/profile.php?action=save', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', ...authHeaders() },
+						body: JSON.stringify(profile)
+					});
+					var sd = await rs.json();
+					saveOK = !!(sd && sd.success);
+				} catch(e) {}
+
+				var r = await fetch('/api/ai_proxy.php', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ question: '你好，请用一句话介绍你自己', history: [] })
+				});
+				var data = await r.json();
+
+				if (data && !data.error && typeof data.content === 'string') {
+					var msg = (data.content.length > 120 ? data.content.slice(0,120)+'...' : data.content).replace(/</g,'&lt;').replace(/\n/g,'<br>');
+					if (out) out.innerHTML = '<span style="color:#10b981">✅ 连通成功！配置已立即生效（' + (saveOK ? '已持久化保存' : '保存失败但本次已生效') + '）。回复：</span> ' + msg;
+				} else {
+					var err = (data && data.error) ? (typeof data.error === 'string' ? data.error : JSON.stringify(data.error)) : '无响应';
+					var fbHint = saveOK ? '（已保存当前配置）' : '（配置未保存，请手动点保存）';
+					if (out) out.innerHTML = '<span style="color:#ef4444">❌ 测试失败：' + err.replace(/</g,'&lt;') + '</span> ' + fbHint + '；' + (data && data.fallback ? '接口失败时会回退本地问答库' : '（若勾选自动回退，用户侧将自动走本地问答库）');
+				}
+			} catch(e) {
+				if (out) out.innerHTML = '<span style="color:#ef4444">❌ 请求异常：' + String(e.message || e).replace(/</g,'&lt;') + '</span>';
+			}
+		}
+
+		// ============ 背景音乐管理 ============
+		async function loadBgmList() {
+			const wrap = document.getElementById('bgm-list');
+			const stats = document.getElementById('bgm-stats');
+			try {
+				const r = await fetch('/api/music.php?action=list');
+				const data = await r.json();
+				const songs = (data && data.success) ? (data.songs || []) : [];
+				if (stats) stats.textContent = '共 ' + songs.length + ' 首';
+				if (!wrap) return;
+				if (songs.length === 0) {
+					wrap.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--item_left_text_color);font-size:14px;">🎵 暂无音乐，点击上方「上传音乐」添加</div>`;
+					return;
+				}
+				wrap.innerHTML = songs.map(s => {
+					const kb = Math.round((s.size || 0) / 1024);
+					const sizeText = kb > 1024 ? (kb/1024).toFixed(1) + ' MB' : kb + ' KB';
+					return `<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;background:rgba(128,128,128,0.06);border:1px solid rgba(128,128,128,0.12);">
+						<div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,rgba(147,51,234,0.25),rgba(59,130,246,0.25));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🎵</div>
+						<div style="flex:1;min-width:0;">
+							<div style="font-size:13px;font-weight:600;color:var(--item_left_title_color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(s.title||'')}">${escapeHtml(s.title||'')}</div>
+							<div style="font-size:11px;color:var(--item_left_text_color);margin-top:3px;">${sizeText} ${s.hasLrc?'· <span style="color:#7c3aed">含歌词</span>':''}</div>
+						</div>
+						<button class="action-btn del" onclick="deleteBgmFile('${escapeHtml(s.name)}')" style="font-size:12px;padding:6px 10px;">删除</button>
+					</div>`;
+				}).join('');
+			} catch(e) {
+				console.error(e);
+				if (wrap) wrap.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--item_left_text_color);">加载失败</div>`;
+			}
+		}
+
+		async function uploadBgmFiles(input) {
+			if (!input || !input.files || input.files.length === 0) return;
+			const fd = new FormData();
+			for (let i = 0; i < input.files.length; i++) {
+				fd.append('music[]', input.files[i]);
+			}
+			try {
+				const r = await fetch(authUrl('/api/music.php?action=upload'), {
+					method: 'POST',
+					headers: authHeaders(),
+					body: fd
+				});
+				const txt = await r.text();
+				let data;
+				try { data = JSON.parse(txt); } catch(e) { data = { error: txt.slice(0,100) }; }
+				if (data.success) {
+					alert('✅ 成功上传 ' + (data.count || 0) + ' 个文件：\n' + (data.files||[]).join('、'));
+					input.value = '';
+					loadBgmList();
+				} else {
+					alert('❌ 上传失败：' + (data.error || data.message || '未知错误'));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			} finally {
+				input.value = '';
+			}
+		}
+
+		async function deleteBgmFile(filename) {
+			if (!confirm('确定要删除音乐文件：' + filename + ' ？\n（同名歌词文件若存在也请单独删除）')) return;
+			try {
+				const r = await fetch(authUrl('/api/music.php?action=delete'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify({ filename: filename })
+				});
+				const data = await r.json();
+				if (data.success) {
+					alert('✅ 删除成功');
+					loadBgmList();
+				} else {
+					alert('❌ 删除失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		// ============ 首页背景图管理 ============
+		let bgImageListCache = [];
+		let bgImageCurrent = '';
+
+		async function loadBgImages() {
+			const grid = document.getElementById('bgimg-grid');
+			const urlInput = document.getElementById('bgimg-url-input');
+			try {
+				const r = await fetch('/api/profile.php?action=get');
+				const data = await r.json();
+				if (data.success && data.profile) {
+					bgImageListCache = data.profile.backgrounds || [];
+					bgImageCurrent = data.profile.background || '';
+					if (urlInput) urlInput.value = bgImageCurrent;
+					renderBgCurrentPreview();
+				}
+				if (!grid) return;
+				if (bgImageListCache.length === 0) {
+					grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--item_left_text_color);font-size:14px;">🖼️ 还没有上传任何背景图，点击上方「上传背景图」添加</div>`;
+					return;
+				}
+				grid.innerHTML = bgImageListCache.map(b => {
+					const active = (b.url === bgImageCurrent) ? ' <span style="color:#7c3aed;font-weight:600">· 当前</span>' : '';
+					return `<div style="padding:8px;border-radius:12px;background:rgba(128,128,128,0.06);border:${b.url===bgImageCurrent?'2px solid #7c3aed':'1px solid rgba(128,128,128,0.12)'};">
+						<div style="width:100%;aspect-ratio:16/10;border-radius:8px;background:url('${escapeHtml(b.url)}') center/cover no-repeat;cursor:pointer;" onclick="openInNewTab('${escapeHtml(b.url)}')" title="点击查看原图"></div>
+						<div style="font-size:12px;color:var(--item_left_text_color);margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(b.time||'')}${active}</div>
+						<div style="display:flex;gap:6px;margin-top:6px;">
+							<button class="action-btn save" onclick="setAsBgImage('${escapeHtml(b.url)}')" style="font-size:12px;padding:6px 8px;flex:1;">设为背景</button>
+							<button class="action-btn del" onclick="deleteBgImage('${escapeHtml(b.id)}')" style="font-size:12px;padding:6px 8px;">删除</button>
+						</div>
+					</div>`;
+				}).join('');
+			} catch(e) {
+				console.error(e);
+				if (grid) grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--item_left_text_color);">加载失败</div>`;
+			}
+		}
+
+		function openInNewTab(url) {
+			try { window.open(url, '_blank'); } catch(e) {}
+		}
+
+		function renderBgCurrentPreview() {
+			const box = document.getElementById('bgimg-current-box');
+			const label = document.querySelector('#bgimg-current-preview > div');
+			if (!box) return;
+			if (bgImageCurrent) {
+				box.style.background = `transparent url('${bgImageCurrent}') center/cover no-repeat`;
+				box.textContent = '';
+				if (label) label.innerHTML = '当前生效背景图 <span style="color:#7c3aed">（' + bgImageCurrent.length > 60 ? bgImageCurrent.slice(0,60) + '…' : bgImageCurrent + '）</span>';
+			} else {
+				box.style.background = 'linear-gradient(135deg,#e0c3fc,#8ec5fc)';
+				box.textContent = '默认渐变背景';
+				if (label) label.textContent = '当前使用默认渐变背景（未设置背景图）';
+			}
+		}
+
+		async function uploadBgImages(input) {
+			if (!input || !input.files || input.files.length === 0) return;
+			const fd = new FormData();
+			for (let i = 0; i < input.files.length; i++) {
+				fd.append('background[]', input.files[i]);
+			}
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=upload_bg'), {
+					method: 'POST',
+					headers: authHeaders(),
+					body: fd
+				});
+				const data = await r.json();
+				if (data.success) {
+					alert('✅ 成功上传 ' + (data.uploaded || 0) + ' 张背景图');
+					bgImageListCache = data.backgrounds || [];
+					bgImageCurrent = data.current || '';
+					const urlInput = document.getElementById('bgimg-url-input');
+					if (urlInput) urlInput.value = bgImageCurrent;
+					renderBgCurrentPreview();
+					loadBgImages();
+				} else {
+					alert('❌ 上传失败：' + (data.error || data.message || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			} finally {
+				input.value = '';
+			}
+		}
+
+		async function setAsBgImage(url) {
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=set_bg'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify({ url: url })
+				});
+				const data = await r.json();
+				if (data.success) {
+					bgImageCurrent = data.background || url;
+					const urlInput = document.getElementById('bgimg-url-input');
+					if (urlInput) urlInput.value = bgImageCurrent;
+					renderBgCurrentPreview();
+					loadBgImages();
+					alert('✅ 已设为首页背景，刷新首页即可生效');
+				} else {
+					alert('❌ 设置失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		async function saveBgImageUrl() {
+			const urlInput = document.getElementById('bgimg-url-input');
+			const url = urlInput ? urlInput.value.trim() : '';
+			setBgImageUrl(url);
+		}
+
+		async function setBgImageUrl(url) {
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=set_bg'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify({ url: url })
+				});
+				const data = await r.json();
+				if (data.success) {
+					bgImageCurrent = data.background || url;
+					const urlInput = document.getElementById('bgimg-url-input');
+					if (urlInput) urlInput.value = bgImageCurrent;
+					renderBgCurrentPreview();
+					alert('✅ 已保存，刷新首页即可生效');
+				} else {
+					alert('❌ 保存失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		async function deleteBgImage(id) {
+			if (!confirm('确定删除这张背景图？')) return;
+			try {
+				const r = await fetch(authUrl('/api/profile.php?action=delete_bg'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify({ id: id })
+				});
+				const data = await r.json();
+				if (data.success) {
+					bgImageListCache = data.backgrounds || [];
+					bgImageCurrent = data.current || '';
+					const urlInput = document.getElementById('bgimg-url-input');
+					if (urlInput) urlInput.value = bgImageCurrent;
+					renderBgCurrentPreview();
+					loadBgImages();
+				} else {
+					alert('❌ 删除失败：' + (data.error || ''));
+				}
+			} catch(e) {
+				alert('❌ 网络错误');
+			}
+		}
+
+		// ============ 卡密管理 ============
+		// ============ 卡密类型管理 ============
+		let keyTypes = [];
+		async function loadKeyTypes() {
+			try {
+				const r = await fetch('/api/sfz_key.php?action=types');
+				if (r.ok) {
+					const data = await r.json();
+					if (data.success) {
+						keyTypes = data.types || [];
+						// 填充下拉框
+						const filterSel = document.getElementById('key-type-filter');
+						const genSel = document.getElementById('keygen-type');
+						const importSel = document.getElementById('keyimport-type');
+						const swSel = document.getElementById('software-key-type');
+						const filterVal = filterSel ? filterSel.value : '';
+						const genVal = genSel ? genSel.value : '';
+						const importVal = importSel ? importSel.value : '';
+						const swVal = swSel ? swSel.value : '';
+						const opts = keyTypes.map(t => `<option value="${t.prefix}">${escapeHtml(t.name)} (前缀 ${t.prefix}-)</option>`).join('');
+						if (filterSel) {
+							filterSel.innerHTML = '<option value="">全部类型</option>' + opts;
+							filterSel.value = filterVal || '';
+						}
+						if (genSel) {
+							genSel.innerHTML = opts;
+							genSel.value = genVal || (keyTypes[0] ? keyTypes[0].prefix : '');
+						}
+						if (importSel) {
+							importSel.innerHTML = opts;
+							importSel.value = importVal || (keyTypes[0] ? keyTypes[0].prefix : '');
+						}
+						if (swSel) {
+							swSel.innerHTML = opts;
+							swSel.value = swVal || (keyTypes[0] ? keyTypes[0].prefix : '');
+						}
+						renderKeyTypeList();
+					}
+				}
+			} catch (e) { console.error('loadKeyTypes error', e); }
+		}
+		function renderKeyTypeList() {
+			const list = document.getElementById('keytype-list');
+			if (!list) return;
+			if (keyTypes.length === 0) {
+				list.innerHTML = '<div style="text-align:center;color:#888;padding:12px">暂无类型</div>';
+				return;
+			}
+			list.innerHTML = keyTypes.map(t => `
+				<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.12);border-radius:10px;margin-bottom:8px">
+					<div>
+						<span style="font-weight:600;color:#1e293b">${escapeHtml(t.name)}</span>
+						<span style="margin-left:8px;padding:2px 8px;border-radius:4px;background:rgba(124,58,237,0.1);color:#7c3aed;font-size:12px;font-family:monospace">${escapeHtml(t.prefix)}-</span>
+					</div>
+					<button class="action-btn del" onclick="delKeyType('${t.prefix}', this)">删除</button>
+				</div>
+			`).join('');
+		}
+		window.openKeyTypeModal = function() {
+			loadKeyTypes();
+			document.getElementById('keytype-modal').classList.add('active');
+		};
+		window.closeKeyTypeModal = function() {
+			document.getElementById('keytype-modal').classList.remove('active');
+		};
+		window.addKeyType = async function(btn) {
+			const prefix = document.getElementById('keytype-prefix').value.trim();
+			const name = document.getElementById('keytype-name').value.trim();
+			if (!prefix || !name) { alert('前缀和名称不能为空'); return; }
+			btn.textContent = '添加中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/sfz_key.php?action=add_type', {
+					method: 'POST',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ prefix, name })
+				});
+				const data = await r.json();
+				if (data.success) {
+					document.getElementById('keytype-prefix').value = '';
+					document.getElementById('keytype-name').value = '';
+					keyTypes = data.types || [];
+					renderKeyTypeList();
+					loadKeyTypes();
+					alert('类型添加成功');
+				} else {
+					alert(data.error || '添加失败');
+				}
+			} catch { alert('网络错误'); }
+			btn.textContent = '添加'; btn.disabled = false;
+		};
+		window.delKeyType = async function(prefix, btn) {
+			if (!confirm('确定删除类型 ' + prefix + '？删除后该类型卡密仍保留但无法新生成。')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/sfz_key.php?action=del_type', {
+					method: 'POST',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ prefix })
+				});
+				const data = await r.json();
+				if (data.success) {
+					keyTypes = data.types || [];
+					renderKeyTypeList();
+					loadKeyTypes();
+				} else {
+					alert(data.error || '删除失败');
+					btn.textContent = '删除'; btn.disabled = false;
+				}
+			} catch { alert('网络错误'); btn.textContent = '删除'; btn.disabled = false; }
+		};
+
+		async function loadCardKeys() {
+			try {
+				const r = await fetch('/api/sfz_key.php?type=keys', { headers: authHeaders() });
+				if (r.ok) {
+					allData.cardkeys = await r.json();
+					const cntEl = document.getElementById('cnt-cardkeys');
+					if (cntEl) cntEl.textContent = allData.cardkeys.length;
+					// 同时刷新统计
+					const sr = await fetch('/api/sfz_key.php?type=stats', { headers: authHeaders() });
+					if (sr.ok) allData.keyStats = await sr.json();
+					updateCounts();
+					renderCardKeys();
+				}
+			} catch (e) {
+				allData.cardkeys = [];
+			}
+		}
+
+		function renderCardKeys() {
+			const tbody = document.getElementById('cardkeys-tbody');
+			if (!tbody) return;
+			let data = allData.cardkeys || [];
+
+			// 筛选
+			const typeFilter = document.getElementById('key-type-filter')?.value || '';
+			const statusFilter = document.getElementById('key-status-filter')?.value || '';
+			if (typeFilter) data = data.filter(k => (k.type || 'sfz') === typeFilter);
+			if (statusFilter === 'used') data = data.filter(k => k.used);
+			else if (statusFilter === 'unused') data = data.filter(k => !k.used);
+
+			// 统计文本
+			const statsText = document.getElementById('key-stats-text');
+			if (statsText) {
+				const total = data.length;
+				const used = data.filter(k => k.used).length;
+				statsText.textContent = `共 ${total} 个，已用 ${used}，未用 ${total - used}`;
+			}
+
+			if (data.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px">暂无卡密，点击右上角生成</td></tr>';
+				document.getElementById('cardkeys-pager').innerHTML = '';
+				return;
+			}
+			const start = (currentPage.cardkeys - 1) * PAGE_SIZE;
+			const slice = data.slice(start, start + PAGE_SIZE);
+			tbody.innerHTML = slice.map(k => `<tr>
+				<td><input type="checkbox" class="cardkey-check" value="${escapeHtml(k.id || '')}" onchange="updateCardKeySelectedCount()"></td>
+				<td class="key-code">${escapeHtml(k.key)}</td>
+				<td><span class="key-tag sfz">${escapeHtml(k.type || 'sfz')}</span></td>
+				<td>${k.used ? '<span class="key-tag used">已使用</span>' : '<span class="key-tag unused">未使用</span>'}</td>
+				<td style="white-space:nowrap;font-size:12px">${escapeHtml(k.createdAt || '')}</td>
+				<td style="white-space:nowrap;font-size:12px">${escapeHtml(k.usedAt || '—')}</td>
+				<td class="ip-cell">${escapeHtml(k.usedIp || '—')}</td>
+				<td>
+					${k.used ? `<button class="action-btn" onclick="resetKey('${k.id}',this)">重置</button>` : ''}
+					<button class="action-btn del" onclick="delKey('${k.id}',this)">删除</button>
+				</td>
+			</tr>`).join('');
+			renderPager('cardkeys-pager', data.length, 'cardkeys');
+		}
+
+		// 筛选事件
+		document.getElementById('key-type-filter')?.addEventListener('change', () => { currentPage.cardkeys = 1; renderCardKeys(); });
+		document.getElementById('key-status-filter')?.addEventListener('change', () => { currentPage.cardkeys = 1; renderCardKeys(); });
+
+		window.openKeyGenModal = function() {
+			document.getElementById('keygen-modal').classList.add('active');
+		};
+		window.closeKeyGenModal = function() {
+			document.getElementById('keygen-modal').classList.remove('active');
+		};
+		window.generateKeys = async function(btn) {
+			const keyType = document.getElementById('keygen-type').value;
+			const count = parseInt(document.getElementById('keygen-count').value) || 1;
+			const days = parseInt(document.getElementById('keygen-days').value) || 365;
+			btn.textContent = '生成中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/sfz_key.php?action=add', {
+					method: 'POST',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ keyType, count, days })
+				});
+				const data = await r.json();
+				if (data.success) {
+					closeKeyGenModal();
+					alert(`成功生成 ${data.keys.length} 个卡密`);
+					loadCardKeys();
+					renderDashboard();
+				} else {
+					alert(data.error || '生成失败');
+				}
+			} catch { alert('网络错误'); }
+			btn.textContent = '生成'; btn.disabled = false;
+		};
+
+		window.openKeyImportModal = function() {
+			document.getElementById('keyimport-modal').classList.add('active');
+		};
+		window.closeKeyImportModal = function() {
+			document.getElementById('keyimport-modal').classList.remove('active');
+		};
+		window.importKeys = async function(btn) {
+			const keyType = document.getElementById('keyimport-type').value;
+			const keysText = document.getElementById('keyimport-text').value.trim();
+			if (!keysText) { alert('请输入卡密'); return; }
+			btn.textContent = '导入中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/sfz_key.php?action=import', {
+					method: 'POST',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ keys: keysText, keyType })
+				});
+				const data = await r.json();
+				if (data.success) {
+					closeKeyImportModal();
+					alert(`成功导入 ${data.imported} 个卡密${data.skipped > 0 ? '，跳过 ' + data.skipped + ' 个重复' : ''}`);
+					document.getElementById('keyimport-text').value = '';
+					loadCardKeys();
+					renderDashboard();
+				} else {
+					alert(data.error || '导入失败');
+				}
+			} catch { alert('网络错误'); }
+			btn.textContent = '导入'; btn.disabled = false;
+		};
+
+		window.delKey = async function(id, btn) {
+			if (!confirm('确定删除该卡密？')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/sfz_key.php', {
+					method: 'DELETE',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ id })
+				});
+				if (r.ok) { loadCardKeys(); renderDashboard(); }
+			else { alert('删除失败'); btn.textContent = '删除'; btn.disabled = false; }
+		} catch { alert('网络错误'); btn.textContent = '删除'; btn.disabled = false; }
+	};
+
+		function toggleAllCardKeys(checkAll) {
+			document.querySelectorAll('.cardkey-check').forEach(function(cb) {
+				cb.checked = checkAll.checked;
+			});
+			updateCardKeySelectedCount();
+		}
+
+		function updateCardKeySelectedCount() {
+			var checked = document.querySelectorAll('.cardkey-check:checked');
+			var span = document.getElementById('cardkey-selected-count');
+			if (span) {
+				span.textContent = checked.length > 0 ? '已选中 ' + checked.length + ' 项' : '';
+			}
+		}
+
+		async function batchDeleteCardKeys() {
+			var checked = document.querySelectorAll('.cardkey-check:checked');
+			if (checked.length === 0) { alert('请先勾选要删除的卡密'); return; }
+			if (!confirm('确认删除选中的 ' + checked.length + ' 条卡密？此操作不可撤销！')) return;
+			var ids = [];
+			checked.forEach(function(cb) { ids.push(cb.value); });
+			try {
+				var token = localStorage.getItem('admin_token') || '';
+				var r = await fetch(authUrl('/api/sfz_key.php?action=batch_delete'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify({ ids: ids })
+				});
+				var data = await r.json();
+				if (data.success) {
+					var selectAll = document.getElementById('cardkey-select-all');
+					if (selectAll) selectAll.checked = false;
+					loadCardKeys();
+					renderDashboard();
+					updateCardKeySelectedCount();
+					alert('✅ 成功删除 ' + (data.deleted || ids.length) + ' 条卡密');
+				} else {
+					alert('❌ 删除失败：' + (data.error || ''));
+				}
+			} catch (e) {
+				alert('❌ 删除失败：' + (e.message || '网络错误'));
+			}
+		}
+
+		window.resetKey = async function(id, btn) {
+			if (!confirm('确定重置该卡密为未使用状态？')) return;
+			btn.textContent = '重置中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/sfz_key.php?action=reset', {
+					method: 'POST',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ id })
+				});
+				if (r.ok) { loadCardKeys(); }
+				else { alert('重置失败'); btn.textContent = '重置'; btn.disabled = false; }
+			} catch { alert('网络错误'); btn.textContent = '重置'; btn.disabled = false; }
+		};
+
+		window.exportKeys = function() {
+			const keys = allData.cardkeys.map(k => k.key).join('\n');
+			if (!keys) { alert('暂无卡密可导出'); return; }
+			const blob = new Blob([keys], { type: 'text/plain' });
+			const a = document.createElement('a');
+			a.href = URL.createObjectURL(blob);
+			a.download = 'cardkeys_' + new Date().toISOString().split('T')[0] + '.txt';
+			a.click();
+		};
+
+		// ============ 更新日志管理 ============
+		let editingChangelogId = null;
+
+		function renderChangelog() {
+			const tbody = document.getElementById('changelog-tbody');
+			if (!tbody) return;
+			const data = allData.changelog;
+			if (data.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px">暂无数据</td></tr>';
+				return;
+			}
+			const start = (currentPage.changelog - 1) * PAGE_SIZE;
+			const slice = data.slice(start, start + PAGE_SIZE);
+			tbody.innerHTML = slice.map(item => {
+				const contentPreview = escapeHtml(item.content || '').substring(0, 50) + (item.content && item.content.length > 50 ? '...' : '');
+				return `<tr>
+					<td style="white-space:nowrap">${escapeHtml(item.date || '')}</td>
+					<td style="font-weight:600">${escapeHtml(item.title || '')}</td>
+					<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(item.content || '')}">${contentPreview}</td>
+					<td>
+						<button class="action-btn save" onclick="editChangelog('${item.id}')">编辑</button>
+						<button class="action-btn del" onclick="delChangelog('${item.id}', this)">删除</button>
+					</td>
+				</tr>`;
+			}).join('');
+			renderPager('changelog-pager', data.length, 'changelog');
+		}
+
+		window.openChangelogModal = function() {
+			editingChangelogId = null;
+			document.getElementById('changelog-modal-title').textContent = '添加日志';
+			document.getElementById('changelog-date').value = new Date().toISOString().split('T')[0];
+			document.getElementById('changelog-title').value = '';
+			document.getElementById('changelog-content').value = '';
+			document.getElementById('changelog-modal').classList.add('active');
+		};
+
+		window.closeChangelogModal = function() {
+			document.getElementById('changelog-modal').classList.remove('active');
+		};
+
+		window.editChangelog = function(id) {
+			const item = allData.changelog.find(x => x.id === id);
+			if (!item) return;
+			editingChangelogId = id;
+			document.getElementById('changelog-modal-title').textContent = '编辑日志';
+			document.getElementById('changelog-date').value = item.date || '';
+			document.getElementById('changelog-title').value = item.title || '';
+			document.getElementById('changelog-content').value = item.content || '';
+			document.getElementById('changelog-modal').classList.add('active');
+		};
+
+		window.saveChangelog = async function(btn) {
+			const date = document.getElementById('changelog-date').value;
+			const title = document.getElementById('changelog-title').value.trim();
+			const content = document.getElementById('changelog-content').value.trim();
+			if (!date || !title || !content) { alert('请填写完整信息'); return; }
+
+			btn.textContent = '保存中...'; btn.disabled = true;
+			try {
+				let url = '/api/changelog.php?action=';
+				let method = 'POST';
+				if (editingChangelogId) {
+					url += 'edit&id=' + editingChangelogId;
+					method = 'PUT';
+				} else {
+					url += 'add';
+				}
+				const r = await fetch(url, {
+					method: method,
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ date, title, content })
+				});
+				if (r.ok) {
+					closeChangelogModal();
+					loadChangelog();
+				} else {
+					alert('保存失败');
+					btn.textContent = '保存'; btn.disabled = false;
+				}
+			} catch {
+				alert('网络错误');
+				btn.textContent = '保存'; btn.disabled = false;
+			}
+		};
+
+		window.delChangelog = async function(id, btn) {
+			if (!confirm('确定删除该日志？')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/changelog.php?action=delete&id=' + id, {
+					method: 'DELETE',
+					headers: authHeaders()
+				});
+				if (r.ok) {
+					loadChangelog();
+				} else {
+					alert('删除失败');
+					btn.textContent = '删除'; btn.disabled = false;
+				}
+			} catch {
+				alert('网络错误');
+				btn.textContent = '删除'; btn.disabled = false;
+			}
+		};
+
+		async function loadChangelog() {
+			try {
+				const r = await fetch('/api/changelog.php');
+				if (r.ok) {
+					allData.changelog = await r.json();
+					const cntEl = document.getElementById('cnt-changelog');
+					if (cntEl) cntEl.textContent = allData.changelog.length;
+					renderChangelog();
+					updateCounts();
+				}
+			} catch (e) {
+				allData.changelog = [];
+			}
+		}
+
+		// ============ 联系设置 ============
+		function renderContact() {
+			const data = allData.contact || {};
+			const wechatEl = document.getElementById('contact-wechat');
+			const qqEl = document.getElementById('contact-qq');
+			const emailEl = document.getElementById('contact-email');
+			const qrEl = document.getElementById('contact-wechat-qr');
+			const tgMainEl = document.getElementById('contact-tg-main');
+			const tgSubEl = document.getElementById('contact-tg-sub');
+			if (wechatEl) wechatEl.value = data.wechat || '';
+			if (qqEl) qqEl.value = data.qq || '';
+			if (emailEl) emailEl.value = data.email || '';
+			if (qrEl) qrEl.value = data.wechat_qr || '';
+			if (tgMainEl) tgMainEl.value = data.tg_main || '';
+			if (tgSubEl) tgSubEl.value = data.tg_sub || '';
+		}
+
+		window.saveContact = async function(btn) {
+			const wechat = document.getElementById('contact-wechat').value.trim();
+			const qq = document.getElementById('contact-qq').value.trim();
+			const email = document.getElementById('contact-email').value.trim();
+			const wechat_qr = document.getElementById('contact-wechat-qr').value.trim();
+			const tg_main = document.getElementById('contact-tg-main').value.trim();
+			const tg_sub = document.getElementById('contact-tg-sub').value.trim();
+
+			btn.textContent = '保存中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/contact.php?action=save', {
+					method: 'PUT',
+					headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+					body: JSON.stringify({ wechat, qq, email, wechat_qr, tg_main, tg_sub })
+				});
+				if (r.ok) {
+					const data = await r.json();
+					allData.contact = data.data || {};
+					alert('保存成功！');
+				} else {
+					alert('保存失败');
+				}
+			} catch {
+				alert('网络错误');
+			}
+			btn.textContent = '保存设置'; btn.disabled = false;
+		};
+
+		async function loadContact() {
+			try {
+				const r = await fetch('/api/contact.php');
+				if (r.ok) {
+					allData.contact = await r.json();
+					renderContact();
+				}
+			} catch (e) {
+				allData.contact = {};
+			}
+		}
+
+		// ============ 粒子互动 ============
+		function normalizePath(p) {
+			if (!p) return p;
+			if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('/')) return p;
+			if (p.startsWith('./')) return p.substring(1);
+			return '/' + p;
+		}
+		function renderParticle() {
+			const tbody = document.getElementById('particle-tbody');
+			if (!tbody) return;
+			const data = allData.particle || [];
+			if (data.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#888">暂无记录</td></tr>';
+				return;
+			}
+			const start = (currentPage.particle - 1) * PAGE_SIZE;
+			const pageData = data.slice(start, start + PAGE_SIZE);
+			tbody.innerHTML = pageData.map(r => {
+				const type = r.type === 'photo' ? '📸 照片' : (r.type === 'video' ? '📹 视频' : '🎯 ' + (r.shape || '使用'));
+				let content = '-';
+				if (r.photo) {
+					const photoUrl = normalizePath(r.photo);
+					content = `<img src="${photoUrl}" style="width:60px;height:45px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="window.open('${photoUrl}')" />`;
+				} else if (r.video) {
+					const videoUrl = normalizePath(r.video);
+					content = `<video src="${videoUrl}" style="width:90px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="playParticleVideo('${videoUrl}')" controls preload="none"></video>`;
+				} else {
+					content = escapeHtml(r.shape || '-');
+				}
+				return `<tr>
+					<td><input type="checkbox" class="particle-check" value="${escapeHtml(r.id || '')}" onchange="updateParticleSelectedCount()"></td>
+					<td>${escapeHtml(r.ip || '')}</td>
+					<td>${type}</td>
+					<td>${content}</td>
+					<td>${escapeHtml(r.time || '')}</td>
+					<td><button onclick="delParticle('${r.id}', this)" style="color:#e74c3c;cursor:pointer;border:none;background:none">删除</button></td>
+				</tr>`;
+			}).join('');
+			renderPager('particle-pager', data.length, 'particle');
+		}
+
+		window.playParticleVideo = function(url) {
+			const modal = document.createElement('div');
+			modal.id = 'video-modal';
+			modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px';
+			modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+			
+			const filename = url.split('/').pop() || 'video';
+			
+			modal.innerHTML = `
+				<div style="display:flex;align-items:center;justify-content:space-between;width:90%;max-width:900px;color:#fff">
+					<div style="font-size:14px;color:#aaa">
+						<span style="color:#667eea;font-weight:600">📹 视频播放</span>
+						<span style="margin:0 10px">·</span>
+						<span>${filename}</span>
+					</div>
+					<div style="display:flex;gap:10px;align-items:center">
+						<button onclick="downloadParticleVideo('${url}','${filename}')" style="padding:8px 16px;background:rgba(102,126,234,0.2);color:#667eea;border:1px solid rgba(102,126,234,0.3);border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit">⬇️ 下载</button>
+						<button onclick="document.getElementById('video-modal').remove()" style="padding:8px 16px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit">✕ 关闭</button>
+					</div>
+				</div>
+				<video src="${url}?t=${Date.now()}" controls autoplay playsinline style="max-width:90%;max-height:calc(100vh - 120px);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5);background:#000" />
+			`;
+			document.body.appendChild(modal);
+			
+			document.addEventListener('keydown', function escHandler(e) {
+				if (e.key === 'Escape') {
+					modal.remove();
+					document.removeEventListener('keydown', escHandler);
+				}
+			});
+		};
+		
+		window.downloadParticleVideo = function(url, filename) {
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		};
+
+		window.delParticle = async function(id, btn) {
+			if (!confirm('确定删除该记录？')) return;
+			btn.textContent = '删除中...'; btn.disabled = true;
+			try {
+				const r = await fetch('/api/particle.php?id=' + id, { method: 'DELETE', headers: authHeaders() });
+				if (r.ok) {
+					allData.particle = allData.particle.filter(x => x.id !== id);
+				renderParticle();
+				updateCounts();
+			} else { alert('删除失败'); btn.textContent = '删除'; btn.disabled = false; }
+		} catch { alert('网络错误'); btn.textContent = '删除'; btn.disabled = false; }
+	};
+
+		function toggleAllParticle(checkAll) {
+			document.querySelectorAll('.particle-check').forEach(function(cb) {
+				cb.checked = checkAll.checked;
+			});
+			updateParticleSelectedCount();
+		}
+
+		function updateParticleSelectedCount() {
+			var checked = document.querySelectorAll('.particle-check:checked');
+			var span = document.getElementById('particle-selected-count');
+			if (span) {
+				span.textContent = checked.length > 0 ? '已选中 ' + checked.length + ' 项' : '未选中';
+			}
+		}
+
+		async function batchDeleteParticle() {
+			var checked = document.querySelectorAll('.particle-check:checked');
+			if (checked.length === 0) { alert('请先勾选要删除的记录'); return; }
+			if (!confirm('确认删除选中的 ' + checked.length + ' 条记录？')) return;
+			var ids = [];
+			checked.forEach(function(cb) { ids.push(cb.value); });
+			try {
+				var token = localStorage.getItem('admin_token') || '';
+				var r = await fetch(authUrl('/api/particle.php?action=batch_delete'), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', ...authHeaders() },
+					body: JSON.stringify({ ids: ids })
+				});
+				var data = await r.json();
+				if (data.success) {
+					var idSet = {};
+					ids.forEach(function(id) { idSet[id] = true; });
+					allData.particle = allData.particle.filter(function(x) { return !idSet[x.id]; });
+					renderParticle();
+					updateCounts();
+					var selectAll = document.getElementById('particle-select-all');
+					if (selectAll) selectAll.checked = false;
+					updateParticleSelectedCount();
+					alert('✅ 成功删除 ' + (data.deleted || ids.length) + ' 条记录');
+				} else {
+					alert('❌ 删除失败：' + (data.error || ''));
+				}
+			} catch (e) {
+				alert('❌ 删除失败：' + (e.message || '网络错误'));
+			}
+		}
+
+
+
+	var pageLoading = document.querySelector("#zmy-loading");
+	window.addEventListener('load', function() { setTimeout(function() { pageLoading.style.opacity = '0'; setTimeout(function(){ if(pageLoading) pageLoading.style.display='none'; }, 500); }, 100); });
+
+	(function() {
+		const audio = document.createElement('audio');
+		audio.src = './背景乐.mp3';
+		audio.loop = true;
+		audio.volume = 0.5;
+		audio.preload = 'auto';
+		document.body.appendChild(audio);
+
+		const player = document.createElement('div');
+		player.style.cssText = 'position:fixed;bottom:80px;right:30px;z-index:9999;';
+		player.innerHTML = `
+			<div style="width:50px;height:50px;border-radius:50%;background:var(--item_bg_color);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(128,128,128,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--main_text_color);transition:all 0.3s;"
+				 onmouseover="this.style.transform='scale(1.1)'"
+				 onmouseout="this.style.transform='scale(1)'">
+				<svg viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor;display:none" class="m-play"><path d="M572.9 243.2c-7.1-1.4-14.2-2-21.3-2-60.2 0-109.3 49.1-109.3 109.3v250.2c-12.8-7.6-27.1-12.1-42.7-12.1-60.2 0-109.3 49.1-109.3 109.3s49.1 109.3 109.3 109.3 109.3-49.1 109.3-109.3V372.1c0-36.2 29.3-65.5 65.5-65.5 7.1 0 14.2 1.1 21.3 3.2V243.2z"></path></svg>
+				<svg viewBox="0 0 1024 1024" style="width:24px;height:24px;fill:currentColor" class="m-pause"><path d="M349.749455 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863zM776.718909 728.497863a51.2 51.2 0 0 1-51.2 51.2l0 0a51.2 51.2 0 0 1-51.2-51.2V295.683772a51.2 51.2 0 0 1 51.2-51.2l0 0a51.2 51.2 0 0 1 51.2 51.2V728.497863z"></path></svg>
+			</div>`;
+		document.body.appendChild(player);
+
+		const playIcon = player.querySelector('.m-play');
+		const pauseIcon = player.querySelector('.m-pause');
+		let playing = false;
+
+		function toggle() {
+			if (playing) {
+				audio.pause();
+				playing = false;
+				playIcon.style.display = 'none';
+				pauseIcon.style.display = 'block';
+				localStorage.setItem('musicPlaying', 'false');
+			} else {
+				audio.play().then(() => {
+					playing = true;
+					playIcon.style.display = 'block';
+					pauseIcon.style.display = 'none';
+					localStorage.setItem('musicPlaying', 'true');
+				}).catch(() => {});
+			}
+		}
+		player.querySelector('div').addEventListener('click', toggle);
+
+		function tryPlay() {
+			if (localStorage.getItem('musicPlaying') === 'false') return;
+			audio.play().then(() => {
+				playing = true;
+				playIcon.style.display = 'block';
+				pauseIcon.style.display = 'none';
+			}).catch(() => {
+				const firstInteract = () => {
+					if (localStorage.getItem('musicPlaying') !== 'false') {
+						audio.play().then(() => {
+							playing = true;
+							playIcon.style.display = 'block';
+							pauseIcon.style.display = 'none';
+						}).catch(() => {});
+					}
+					document.removeEventListener('click', firstInteract);
+					document.removeEventListener('touchstart', firstInteract);
+				};
+				document.addEventListener('click', firstInteract, { once: true });
+				document.addEventListener('touchstart', firstInteract, { once: true });
+			});
+		}
+		tryPlay();
+	})();
+
+	// ============ 软件管理 ============
+	let allSoftware = [];
+	function openSoftwareModal() {
+		document.getElementById('software-name').value = '';
+		document.getElementById('software-icon').value = '📦';
+		document.getElementById('software-desc').value = '';
+		document.getElementById('software-version').value = '1.0';
+		document.getElementById('software-require-key').checked = false;
+		document.getElementById('key-type-row').style.display = 'none';
+		document.getElementById('software-key-type').value = 'sfz';
+		document.getElementById('software-file').value = '';
+		document.getElementById('software-modal').classList.add('active');
+	}
+	function closeSoftwareModal() {
+		document.getElementById('software-modal').classList.remove('active');
+	}
+	async function loadSoftware() {
+		try {
+			const r = await fetch('./api/software.php?action=admin_list', { headers: authHeaders() });
+			if (r.status === 401) { localStorage.removeItem('admin_token'); window.location.href = './login.html'; return; }
+			allSoftware = await r.json();
+			renderSoftware();
+			const cntEl = document.getElementById('cnt-software');
+			if (cntEl) cntEl.textContent = allSoftware.length;
+		} catch(e) {
+			allSoftware = [];
+			renderSoftware();
+		}
+	}
+	function renderSoftware() {
+		const tbody = document.getElementById('software-tbody');
+		if (!allSoftware || allSoftware.length === 0) {
+			tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--item_left_text_color)">暂无软件</td></tr>';
+			return;
+		}
+		tbody.innerHTML = allSoftware.map(s => {
+			const sizeStr = s.size > 1048576 ? (s.size / 1048576).toFixed(1) + ' MB' :
+				s.size > 1024 ? (s.size / 1024).toFixed(1) + ' KB' : s.size + ' B';
+			const keyTag = s.requireKey
+				? '<span style="padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(255,107,107,0.15);color:#ff6b6b">需卡密</span>'
+				: '<span style="padding:2px 8px;border-radius:4px;font-size:11px;background:rgba(82,196,26,0.15);color:#52c41a">免费</span>';
+			const fileName = s.fileName || '';
+			const ext = (fileName.split('.').pop() || '').toLowerCase();
+			const isImg = ['jpg','jpeg','png','gif','bmp','webp','svg'].indexOf(ext) >= 0;
+			const iconCell = isImg
+				? '<td><img src="./api/software.php?action=preview&id=' + s.id + '" style="width:40px;height:40px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open(this.src)" onerror="this.style.display=\'none\';this.parentElement.innerHTML=\'📦\'" /></td>'
+				: '<td style="font-size:24px">' + (s.icon || '📦') + '</td>';
+			return '<tr>' +
+				iconCell +
+				'<td>' + escapeHtml(s.name || '') + '<div style="font-size:11px;color:var(--item_left_text_color);margin-top:2px">' + escapeHtml(fileName) + '</div></td>' +
+				'<td>v' + escapeHtml(s.version || '1.0') + '</td>' +
+				'<td>' + sizeStr + '</td>' +
+				'<td>' + keyTag + '</td>' +
+				'<td>' + (s.downloadCount || 0) + '</td>' +
+				'<td style="font-size:12px;color:var(--item_left_text_color)">' + (s.createdAt || '') + '</td>' +
+				'<td><button class="action-btn del" onclick="deleteSoftware(\'' + s.id + '\')">删除</button></td>' +
+			'</tr>';
+		}).join('');
+	}
+	async function uploadSoftware(btn) {
+		const name = document.getElementById('software-name').value.trim();
+		const icon = document.getElementById('software-icon').value.trim() || '📦';
+		const desc = document.getElementById('software-desc').value.trim();
+		const version = document.getElementById('software-version').value.trim() || '1.0';
+		const requireKey = document.getElementById('software-require-key').checked;
+		const keyType = document.getElementById('software-key-type').value;
+		const fileInput = document.getElementById('software-file');
+		
+		if (!name) { alert('请输入软件名称'); return; }
+		if (!fileInput.files || fileInput.files.length === 0) { alert('请选择文件'); return; }
+		
+		const formData = new FormData();
+		formData.append('name', name);
+		formData.append('icon', icon);
+		formData.append('description', desc);
+		formData.append('version', version);
+		formData.append('requireKey', requireKey);
+		formData.append('keyType', keyType);
+		formData.append('file', fileInput.files[0]);
+		
+		btn.disabled = true;
+		btn.textContent = '上传中...';
+		try {
+			const r = await fetch('./api/software.php?action=upload', {
+				method: 'POST',
+				headers: { 'Authorization': 'Bearer ' + token },
+				body: formData
+			});
+			const data = await r.json();
+			if (data.success) {
+				closeSoftwareModal();
+				loadSoftware();
+			} else {
+				alert(data.error || '上传失败');
+			}
+		} catch(e) {
+			alert('上传失败：' + e.message);
+		}
+		btn.disabled = false;
+		btn.textContent = '上传';
+	}
+	async function deleteSoftware(id) {
+		if (!confirm('确定删除此软件吗？文件也会被删除')) return;
+		try {
+			const r = await fetch('./api/software.php', {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+				body: JSON.stringify({ id: id })
+			});
+			const data = await r.json();
+			if (data.success) {
+				loadSoftware();
+			} else {
+				alert(data.error || '删除失败');
+			}
+		} catch(e) {
+			alert('删除失败：' + e.message);
+		}
+	}
+	loadSoftware();
+
+	// ============ 访客清理功能 ============
+	window.cleanVisitors = async function(mode) {
+		let count = 0;
+		
+		if (mode === 'count') {
+			const inputId = document.activeElement.closest('.tab-content').id === 'tab-visitor-locations' 
+				? 'clean-locations-count' 
+				: 'clean-visitors-count';
+			count = parseInt(document.getElementById(inputId).value) || 0;
+			
+			if (count <= 0) {
+				alert('请输入有效的清理数量！');
+				return;
+			}
+			
+			if (!confirm(`确定清理最近的 ${count} 条访客记录？`)) return;
+		} else {
+			if (!confirm('确定清理全部访客记录？此操作不可恢复！')) return;
+		}
+
+		try {
+			const r = await fetch(authUrl('/api/visitors.php'), {
+				method: 'POST',
+				headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					action: 'clean_visitors',
+					mode: mode === 'count' ? 'count' : 'all',
+					count: count
+				})
+			});
+			if (r.ok) {
+				const data = await r.json();
+				alert(data.message || '清理成功！');
+				// 重新加载访客数据
+				if (typeof loadVisitorsPage === 'function') loadVisitorsPage(1);
+				if (typeof loadVisitorLocations === 'function') loadVisitorLocations();
+				if (typeof updateCounts === 'function') updateCounts();
+			} else {
+				alert('清理失败！');
+			}
+		} catch(e) {
+			alert('网络错误：' + e.message);
+		}
+	};
+
+	window.cleanLocationCache = async function() {
+		if (!confirm('确定清理所有IP地址缓存？清理后下次查询将重新获取。')) return;
+
+		try {
+			const r = await fetch(authUrl('/api/visitors.php'), {
+				method: 'POST',
+				headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+				body: JSON.stringify({ action: 'clean_location_cache' })
+			});
+			if (r.ok) {
+				const data = await r.json();
+				alert(data.message || '地址缓存清理成功！');
+				if (typeof loadVisitorsPage === 'function') loadVisitorsPage(1);
+				if (typeof loadVisitorLocations === 'function') loadVisitorLocations();
+			} else {
+				alert('清理失败！');
+			}
+		} catch(e) {
+			alert('网络错误：' + e.message);
+		}
+	};
+
+	// ============ 通用弹窗 ============
+	function openModal(html) {
+		let modal = document.getElementById('generic-modal');
+		if (!modal) {
+			modal = document.createElement('div');
+			modal.id = 'generic-modal';
+			modal.style.cssText = 'position:fixed;inset:0;background:rgba(30,41,59,0.3);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px';
+			modal.onclick = function(e) { if (e.target === modal) closeAllModals(); };
+			document.body.appendChild(modal);
+		}
+		modal.innerHTML = html;
+		modal.style.display = 'flex';
+	}
+
+	function closeModal(btn) {
+		const modal = btn.closest('#generic-modal') || btn.closest('.modal-box')?.parentElement;
+		if (modal && modal.id === 'generic-modal') {
+			modal.style.display = 'none';
+			modal.innerHTML = '';
+		} else {
+			closeAllModals();
+		}
+	}
+
+	function closeAllModals() {
+		const modal = document.getElementById('generic-modal');
+		if (modal) {
+			modal.style.display = 'none';
+			modal.innerHTML = '';
+		}
+	}
+
+	// ============ AI问答库管理 ============
+	let allQA = [];
+
+	async function loadQA() {
+		loadAIConfig();
+		try {
+			const r = await fetch(authUrl('/api/ai_qa.php?action=admin/list'), { headers: authHeaders() });
+			if (r.status === 401) { localStorage.removeItem('admin_token'); window.location.href = './login.html'; return; }
+			const data = await r.json();
+			allQA = data.list || [];
+			renderQA();
+		} catch(e) {
+			allQA = [];
+			renderQA();
+		}
+	}
+
+	function renderQA() {
+		const tbody = document.getElementById('qa-tbody');
+		if (!tbody) return;
+		if (allQA.length === 0) {
+			tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#888">暂无问答，点击"添加问答"创建</td></tr>';
+			return;
+		}
+		tbody.innerHTML = allQA.map((qa, i) => {
+			const keywords = (qa.keywords || []).map(k => `<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:6px;background:rgba(124,58,237,0.12);color:var(--purple_text_color);font-size:12px">${k}</span>`).join('');
+			const answer = qa.answer || '';
+			const truncated = answer.length > 80 ? answer.substring(0, 80) + '...' : answer;
+			return `<tr>
+				<td>${i + 1}</td>
+				<td style="max-width:200px">${keywords || '<span style="color:#999">-</span>'}</td>
+				<td style="max-width:300px">${truncated.replace(/\n/g, ' ')}</td>
+				<td style="font-size:12px;color:var(--item_left_text_color)">${qa.created_at || '-'}</td>
+				<td>
+					<button class="action-btn" onclick="editQA('${qa.id}')">编辑</button>
+					<button class="action-btn del" onclick="deleteQA('${qa.id}')">删除</button>
+				</td>
+			</tr>`;
+		}).join('');
+	}
+
+	function openAddQA(id) {
+		const qa = id ? allQA.find(q => q.id === id) : { keywords: [], answer: '' };
+		const isEdit = !!id;
+		const keywordsStr = (qa.keywords || []).join(', ');
+		const html = `<div class="modal-box" style="max-width:600px">
+			<div class="modal-title">${isEdit ? '编辑问答' : '添加问答'}</div>
+			<div style="margin-bottom:16px">
+				<label style="display:block;margin-bottom:6px;font-weight:600">关键词（用逗号分隔，用于匹配用户问题）</label>
+				<input type="text" id="qa-keywords" value="${keywordsStr}" placeholder="例如: 多少钱, 价格, 收费" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box">
+			</div>
+			<div style="margin-bottom:20px">
+				<label style="display:block;margin-bottom:6px;font-weight:600">答案</label>
+				<textarea id="qa-answer" rows="6" placeholder="当用户问题匹配关键词时返回的答案..." style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:14px;outline:none;box-sizing:border-box;resize:vertical">${qa.answer || ''}</textarea>
+			</div>
+			<div style="display:flex;gap:10px;justify-content:flex-end">
+				<button class="btn-cancel" onclick="closeModal(this)">取消</button>
+				<button class="btn-confirm" onclick="saveQAItem('${id || ''}')">保存</button>
+			</div>
+		</div>`;
+		openModal(html);
+	}
+
+	function editQA(id) { openAddQA(id); }
+
+	async function saveQAItem(id) {
+		const keywordsStr = document.getElementById('qa-keywords').value.trim();
+		const answer = document.getElementById('qa-answer').value.trim();
+		if (!answer) { alert('答案不能为空！'); return; }
+		const keywords = keywordsStr.split(/[,，]/).map(k => k.trim()).filter(k => k);
+
+		try {
+			const url = id ? authUrl('/api/ai_qa.php?action=admin/update') : authUrl('/api/ai_qa.php?action=admin/add');
+			const r = await fetch(url, {
+				method: 'POST',
+				headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+				body: JSON.stringify(id ? { id, keywords, answer } : { keywords, answer })
+			});
+			const data = await r.json();
+			if (r.ok && data.success) {
+				closeAllModals();
+				loadQA();
+			} else {
+				alert(data.error || '保存失败');
+			}
+		} catch(e) {
+			alert('网络错误：' + e.message);
+		}
+	}
+
+	async function deleteQA(id) {
+		if (!confirm('确定删除这条问答？')) return;
+		try {
+			const r = await fetch(authUrl('/api/ai_qa.php?action=admin/delete'), {
+				method: 'POST',
+				headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id })
+			});
+			const data = await r.json();
+			if (r.ok && data.success) {
+				loadQA();
+			} else {
+				alert(data.error || '删除失败');
+			}
+		} catch(e) {
+			alert('网络错误：' + e.message);
+		}
+	}
+
+	function openImportQA() {
+		const html = `<div class="modal-box" style="max-width:700px">
+			<div class="modal-title">批量导入问答</div>
+			<div style="margin-bottom:16px">
+				<label style="display:block;margin-bottom:6px;font-weight:600">导入格式（每行一条，用 | 分隔关键词和答案）</label>
+				<textarea id="qa-import-data" rows="12" placeholder="关键词1,关键词2|答案内容&#10;关键词3,关键词4|另一条答案" style="width:100%;padding:10px 14px;border:1px solid rgba(128,128,128,0.2);border-radius:10px;background:rgba(255,255,255,0.7);color:#1e293b;font-size:13px;outline:none;box-sizing:border-box;resize:vertical;font-family:monospace"></textarea>
+				<span style="font-size:12px;color:var(--item_left_text_color);margin-top:6px;display:block">格式：关键词1,关键词2|答案内容（每行一条）</span>
+			</div>
+			<div style="display:flex;gap:10px;justify-content:flex-end">
+				<button class="btn-cancel" onclick="closeModal(this)">取消</button>
+				<button class="btn-confirm" onclick="importQAData()">导入</button>
+			</div>
+		</div>`;
+		openModal(html);
+	}
+
+	async function importQAData() {
+		const raw = document.getElementById('qa-import-data').value.trim();
+		if (!raw) { alert('请输入导入数据！'); return; }
+		const lines = raw.split(/\r?\n/).filter(l => l.trim());
+		const items = [];
+		for (const line of lines) {
+			const parts = line.split('|');
+			if (parts.length >= 2) {
+				const keywords = parts[0].split(/[,，]/).map(k => k.trim()).filter(k => k);
+				const answer = parts.slice(1).join('|').trim();
+				if (keywords.length > 0 && answer) {
+					items.push({ keywords, answer });
+				}
+			}
+		}
+		if (items.length === 0) { alert('没有有效的数据！'); return; }
+
+		try {
+			const r = await fetch(authUrl('/api/ai_qa.php?action=admin/batch_import'), {
+				method: 'POST',
+				headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+				body: JSON.stringify({ items })
+			});
+			const data = await r.json();
+			if (r.ok && data.success) {
+				alert(`成功导入 ${data.added} 条问答！`);
+				closeAllModals();
+				loadQA();
+			} else {
+				alert(data.error || '导入失败');
+			}
+		} catch(e) {
+			alert('网络错误：' + e.message);
+		}
+	}
+
+	function exportQA() {
+		if (allQA.length === 0) { alert('暂无问答数据'); return; }
+		const text = allQA.map(qa => {
+			const kws = (qa.keywords || []).join(',');
+			return `${kws}|${qa.answer}`;
+		}).join('\n');
+		navigator.clipboard.writeText(text).then(() => {
+			alert(`已导出 ${allQA.length} 条问答到剪贴板！`);
+		}).catch(() => {
+			const ta = document.createElement('textarea');
+			ta.value = text;
+			document.body.appendChild(ta);
+			ta.select();
+			document.execCommand('copy');
+			document.body.removeChild(ta);
+			alert(`已导出 ${allQA.length} 条问答到剪贴板！`);
+		});
+	}
+
+	// Load QA when tab is shown
+	const qaTabObserver = new MutationObserver(() => {
+		const aiTab = document.getElementById('tab-ai-config');
+		if (aiTab && aiTab.classList.contains('active') && allQA.length === 0) {
+			loadQA();
+		}
+	});
+	qaTabObserver.observe(document.getElementById('admin-main'), { childList: true, subtree: true });
+
+	// ============ 缺失的加载函数（供侧边栏点击调用） ============
+	function loadParticle() { renderParticle(); }
+	function loadToolUsers() { renderToolUsers(); }
+	function loadVisitors() { loadVisitorsPage(1); }
+	function loadLogins() { renderLogins(); }
+	function loadMessages() { renderMessages(); }
+	function loadPhotos() { loadAdminPhotos(); }
+</script>
+<style>
+	@media (max-width: 900px) {
+		footer { margin-left: 0 !important; }
+		footer.expanded { margin-left: 0 !important; }
+	}
+	@media (max-width: 768px) {
+		body > div[style*="bottom:80px"] { bottom: 60px !important; right: 20px !important; }
+		body > div[style*="bottom:80px"] > div { width: 40px !important; height: 40px !important; }
+		body > div[style*="bottom:80px"] svg { width: 20px !important; height: 20px !important; }
+	}
+</style>
+
+
+<script>
+function browserIcon(b){var m={Chrome:'🌐',Safari:'🧭',Firefox:'🦊',Edge:'🔵',Opera:'🔴','微信':'💬','QQ浏览器':'🐧','UC浏览器':'🔆','夸克':'🔷','百度浏览器':'🐾',IE:'📟',Vivaldi:'🎼','未知浏览器':'❓','爬虫/机器人':'🤖'};return m[b]||'🌐'}
+function osIcon(o){var m={Windows:'🪟',macOS:'🍎',iOS:'📱',iPadOS:'📱',Android:'🤖',Linux:'🐧',ChromeOS:'💻','未知系统':'❓'};return m[o]||'💻'}
+function deviceIcon(d){var m={'桌面电脑':'🖥️',iPhone:'📱',iPad:'📱','安卓手机':'📱','安卓平板':'📱',平板:'📱','Windows Phone':'📱',爬虫:'🤖',未知:'❓'};return m[d]||'💻'}
+</script>
+<style>
+.ua-cell{min-width:190px;max-width:250px;padding:6px 10px !important}
+.ua-info{display:flex;flex-direction:column;gap:2px;font-size:12px;line-height:1.4}
+.ua-line{display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ua-icon{font-size:13px;flex-shrink:0}
+.ua-ver{opacity:0.6;font-size:11px;margin-left:2px}
+.ua-brand{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:600;margin-right:4px;display:inline-block}
+</style>
+
+<div id="map-modal" class="map-modal" onclick="if(event.target===this)closeMap()">
+	<div class="map-modal-box">
+		<button class="map-close-btn" onclick="closeMap()">×</button>
+		<div class="map-title" id="map-title">位置地图</div>
+		<iframe id="map-iframe" class="map-iframe" src="" frameborder="0"></iframe>
+		<div class="map-actions">
+			<button onclick="searchOnBaidu()" class="map-btn">在百度地图搜索</button>
+			<button onclick="searchOnGoogle()" class="map-btn">在Google地图搜索</button>
+		</div>
+	</div>
+</div>
+<style>
+.map-modal{position:fixed;inset:0;background:rgba(30,41,59,0.3);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:99999;padding:20px}
+.map-modal.active{display:flex}
+.map-modal-box{width:100%;max-width:600px;border-radius:20px;padding:30px;background:rgba(255,255,255,0.75);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border:1px solid rgba(255,255,255,0.8);box-shadow:0 24px 60px rgba(31,38,135,0.15);position:relative;animation:contactFadeIn 0.3s ease-out}
+.map-close-btn{position:absolute;top:12px;right:12px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(128,128,128,0.15);color:#475569;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s}
+.map-close-btn:hover{background:rgba(128,128,128,0.25);transform:rotate(90deg)}
+.map-title{font-size:16px;font-weight:700;margin-bottom:16px;color:#1e293b;text-align:center;word-break:break-all}
+.map-iframe{width:100%;height:350px;border-radius:12px;border:1px solid rgba(128,128,128,0.15)}
+.map-actions{display:flex;gap:10px;margin-top:16px;justify-content:center}
+.map-btn{padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.3s}
+.map-btn:hover{opacity:0.85;transform:translateY(-2px)}
+.action-btn.map{padding:2px 8px;font-size:11px;border-radius:6px;background:rgba(102,126,234,0.15);color:#667eea;border:1px solid rgba(102,126,234,0.3);cursor:pointer}
+.action-btn.map:hover{background:rgba(102,126,234,0.25)}
+.action-btn.search{padding:2px 8px;font-size:11px;border-radius:6px;background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);cursor:pointer}
+.action-btn.search:hover{background:rgba(34,197,94,0.25)}
+@media(max-width:768px){.map-modal-box{padding:20px}.map-iframe{height:250px}.map-actions{flex-direction:column}.map-btn{width:100%}}
+#generic-modal .modal-box{width:100%;max-width:600px;border-radius:20px;padding:30px;background:rgba(255,255,255,0.85);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid rgba(255,255,255,0.9);box-shadow:0 24px 60px rgba(31,38,135,0.15);position:relative;animation:contactFadeIn 0.3s ease-out;color:#1e293b;max-height:90vh;overflow-y:auto}
+#generic-modal .modal-title{font-size:20px;font-weight:700;margin:0 0 20px;color:#1e293b}
+#generic-modal label{color:#475569}
+#generic-modal .form-group label{color:#475569}
+</style>
+<script>
+function openMap(lat,lng,location){
+	var m=document.getElementById('map-modal');
+	var iframe=document.getElementById('map-iframe');
+	var title=document.getElementById('map-title');
+	if(!m||!iframe)return;
+	title.textContent=location||(lat+','+lng);
+	var dlat=parseFloat(lat)||39.9;
+	var dlng=parseFloat(lng)||116.4;
+	var bbox=(dlng-0.01)+','+(dlat-0.01)+','+(dlng+0.01)+','+(dlat+0.01);
+	iframe.src='https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+dlat+','+dlng;
+	m.classList.add('active');
+	m.dataset.lat=lat;
+	m.dataset.lng=lng;
+	m.dataset.location=location||'';
+}
+function closeMap(){
+	var m=document.getElementById('map-modal');
+	if(m){
+		m.classList.remove('active');
+		document.getElementById('map-iframe').src='';
+	}
+}
+function searchLocation(loc){
+	window.open('https://map.baidu.com/search/'+encodeURIComponent(loc));
+}
+function searchOnBaidu(){
+	var m=document.getElementById('map-modal');
+	var loc=m.dataset.location;
+	var lat=m.dataset.lat;
+	var lng=m.dataset.lng;
+	window.open('https://map.baidu.com/search/'+encodeURIComponent(loc||(lat+','+lng))+'/@'+lng+','+lat+',15z');
+}
+function searchOnGoogle(){
+	var m=document.getElementById('map-modal');
+	var lat=m.dataset.lat;
+	var lng=m.dataset.lng;
+	window.open('https://www.google.com/maps/search/?api=1&query='+lat+','+lng);
+}
+</script>
+
+</body>
+
+</html>

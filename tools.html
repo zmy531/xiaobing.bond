@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>在线工具 - Zmy</title>
+	<link rel="icon" href="./static/img/favicon.ico">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<link rel="stylesheet" href="./static/css/style.css">
+	<link rel="stylesheet" href="./static/css/root.css">
+	<style>
+		.tool-page { max-width: 960px; margin: 0 auto; padding: 20px; min-height: 100vh; }
+		.tool-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-top: 20px; }
+		.tool-header .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter)); color: var(--main_text_color); font-size: 14px; transition: all 0.3s; text-decoration: none; }
+		.tool-header .back-btn:hover { background: var(--item_hover_color); transform: translateX(-3px); }
+		.tool-header h1 { font-size: 32px; font-weight: 800; font-family: "title"; }
+
+		.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 30px; }
+		.tool-card {
+			padding: 24px 18px; border-radius: 18px;
+			background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter));
+			cursor: pointer; transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+			border: 1px solid transparent; text-align: center;
+		}
+		.tool-card:hover { transform: translateY(-5px); border-color: var(--purple_text_color); box-shadow: 0 14px 40px rgba(0,0,0,0.12); }
+		.tool-icon { font-size: 42px; margin-bottom: 12px; display: block; }
+		.tool-name { font-size: 17px; font-weight: 700; color: var(--item_left_title_color); margin-bottom: 6px; }
+		.tool-desc { font-size: 12px; color: var(--item_left_text_color); line-height: 1.5; }
+
+		.tool-panel {
+			display: none;
+			border-radius: 24px; padding: 30px;
+			background: var(--item_bg_color); backdrop-filter: blur(var(--card_filter)); -webkit-backdrop-filter: blur(var(--card_filter));
+			margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.08);
+		}
+		.tool-panel.active { display: block; animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+		@keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+		.tool-panel h2 { font-size: 24px; margin-bottom: 8px; color: var(--item_left_title_color); display: flex; align-items: center; gap: 10px; }
+		.tool-panel .desc-text { font-size: 13px; color: var(--item_left_text_color); margin-bottom: 22px; line-height: 1.7; }
+		.tool-panel .back-to-list { cursor: pointer; color: var(--purple_text_color); font-size: 14px; margin-bottom: 18px; display: inline-flex; align-items: center; gap: 4px; transition: gap 0.2s; }
+		.tool-panel .back-to-list:hover { gap: 8px; text-decoration: underline; }
+
+		.form-group { margin-bottom: 18px; }
+		.form-group label { display: block; font-size: 13px; margin-bottom: 8px; color: var(--item_left_text_color); font-weight: 500; }
+		.form-group input, .form-group textarea, .form-group select {
+			width: 100%; padding: 12px 16px;
+			border: 1px solid rgba(128,128,128,0.25); border-radius: 14px;
+			background: rgba(255,255,255,0.06); color: var(--main_text_color);
+			font-size: 14px; outline: none; transition: all 0.25s;
+			box-sizing: border-box; font-family: inherit;
+		}
+		.form-group textarea { resize: vertical; min-height: 120px; line-height: 1.7; }
+		.form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--purple_text_color); background: rgba(255,255,255,0.09); box-shadow: 0 0 0 4px rgba(124,58,237,0.1); }
+
+		.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+		.btn-primary {
+			padding: 12px 28px; border: none; border-radius: 100px;
+			background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff;
+			font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.25s;
+			font-family: inherit; box-shadow: 0 4px 16px rgba(124,58,237,0.2);
+		}
+		.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.3); }
+		.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+		.btn-secondary {
+			padding: 12px 28px; border: 1px solid rgba(128,128,128,0.35); border-radius: 100px;
+			background: transparent; color: var(--main_text_color);
+			font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.25s;
+			font-family: inherit;
+		}
+		.btn-secondary:hover { background: rgba(128,128,128,0.12); }
+
+		.result-box {
+			margin-top: 20px; padding: 20px; border-radius: 16px;
+			background: rgba(255,255,255,0.05); border: 1px solid rgba(128,128,128,0.15);
+			display: none;
+		}
+		.result-box.show { display: block; animation: fadeIn 0.35s; }
+		.result-box .result-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: var(--purple_text_color); display: flex; align-items: center; gap: 6px; }
+		.result-box .result-content { line-height: 1.8; }
+
+		.error-box {
+			margin-top: 20px; padding: 14px 18px; border-radius: 14px;
+			background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2);
+			color: #fca5a5; font-size: 14px; line-height: 1.6; display: none;
+		}
+		.error-box.show { display: block; }
+
+		.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+		.info-item { padding: 14px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+		.info-item .label { font-size: 12px; color: var(--item_left_text_color); margin-bottom: 6px; }
+		.info-item .value { font-size: 15px; font-weight: 600; color: var(--item_left_title_color); word-break: break-all; }
+
+		.code-output {
+			font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+			font-size: 13px; line-height: 1.8; word-break: break-all; white-space: pre-wrap;
+			color: var(--item_left_title_color); background: rgba(0,0,0,0.2);
+			padding: 14px; border-radius: 10px; border: 1px solid rgba(128,128,128,0.15);
+		}
+
+		.loading-dots::after {
+			content: '';
+			animation: dots 1.4s steps(4, end) infinite;
+		}
+		@keyframes dots {
+			0% { content: ''; }
+			25% { content: '·'; }
+			50% { content: '··'; }
+			75% { content: '···'; }
+			100% { content: ''; }
+		}
+
+		.empty-state { text-align: center; padding: 30px 10px; color: var(--item_left_text_color); font-size: 14px; }
+		.link-btn { color: var(--purple_text_color); text-decoration: none; cursor: pointer; transition: opacity 0.2s; font-weight: 600; }
+		.link-btn:hover { opacity: 0.8; text-decoration: underline; }
+
+		/* 登录弹窗 */
+		.login-modal-mask {
+			display: none;
+			position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+			background: rgba(0, 0, 0, 0.5);
+			z-index: 99999; align-items: center; justify-content: center;
+			backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+		}
+		.login-modal-mask.active { display: flex; animation: fadeIn 0.3s; }
+		.login-modal {
+			width: 90%; max-width: 420px;
+			background: #fff; border-radius: 24px; padding: 36px 30px;
+			position: relative; animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+		}
+		@keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+		.login-modal-close {
+			position: absolute; top: 16px; right: 16px;
+			width: 32px; height: 32px; border: none; background: transparent;
+			cursor: pointer; color: #999; font-size: 20px; border-radius: 50%;
+			transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+		}
+		.login-modal-close:hover { background: #f5f5f5; color: #333; transform: rotate(90deg); }
+		.login-modal .form-header { text-align: center; margin-bottom: 26px; }
+		.login-modal .form-header h2 { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+		.login-modal .form-header p { font-size: 13px; color: #888; }
+		.login-modal .sparkle-icon {
+			width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 16px;
+			background: linear-gradient(135deg, #7c3aed, #a78bfa);
+			display: flex; align-items: center; justify-content: center; font-size: 28px;
+		}
+		.login-modal .form-group { margin-bottom: 16px; }
+		.login-modal .form-group label { display: block; font-size: 13px; font-weight: 500; color: #444; margin-bottom: 8px; }
+		.login-modal .form-group input {
+			width: 100%; height: 44px; border: 1.5px solid #e0e0e0; border-radius: 12px;
+			padding: 0 14px; font-size: 15px; color: #1a1a2e; background: #f9f9f9;
+			outline: none; transition: all 0.25s; font-family: inherit; box-sizing: border-box;
+		}
+		.login-modal .form-group input:focus { border-color: #7c3aed; background: #fff; box-shadow: 0 0 0 4px rgba(124,58,237,0.08); }
+		.login-modal .code-input-group { display: flex; gap: 10px; }
+		.login-modal .code-input-group input { flex: 1; }
+		.login-modal .code-btn {
+			height: 44px; padding: 0 16px;
+			border: 1.5px solid #7c3aed; background: transparent; color: #7c3aed;
+			border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+			white-space: nowrap; transition: all 0.25s; font-family: inherit;
+		}
+		.login-modal .code-btn:hover { background: #7c3aed; color: #fff; }
+		.login-modal .code-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+		.login-modal .btn-login {
+			width: 100%; height: 48px; border-radius: 24px; border: none;
+			background: linear-gradient(135deg, #5b21b6, #7c3aed);
+			color: #fff; font-size: 15px; font-weight: 600;
+			cursor: pointer; transition: all 0.25s; margin-top: 6px; font-family: inherit;
+		}
+		.login-modal .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(91, 33, 182, 0.3); }
+		.login-modal .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+		.login-modal .error-msg {
+			display: none; padding: 10px 14px; font-size: 13px; color: #dc2626;
+			background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2);
+			border-radius: 10px; margin-bottom: 16px; line-height: 1.5;
+		}
+		.login-modal .login-tip { text-align: center; font-size: 12px; color: #aaa; margin-top: 14px; }
+
+		.user-info-bar { display: flex; align-items: center; gap: 10px; }
+		.user-avatar {
+			width: 36px; height: 36px; border-radius: 50%;
+			background: linear-gradient(135deg, #5b21b6, #7c3aed); color: #fff;
+			display: flex; align-items: center; justify-content: center;
+			font-size: 14px; font-weight: 600;
+		}
+		.user-email { font-size: 13px; color: var(--item_left_text_color); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		.logout-btn {
+			padding: 6px 12px; border-radius: 8px; border: 1px solid var(--item_hover_color);
+			background: transparent; color: var(--item_left_text_color); font-size: 12px;
+			cursor: pointer; transition: all 0.25s; font-family: inherit;
+		}
+		.logout-btn:hover { background: var(--item_hover_color); }
+
+		@media (max-width: 600px) {
+			.tool-page { padding: 12px; }
+			.tool-header h1 { font-size: 22px; }
+			.tool-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+			.tool-card { padding: 18px 12px; }
+			.tool-icon { font-size: 32px; }
+			.tool-name { font-size: 14px; }
+			.tool-panel { padding: 20px; }
+		}
+	</style>
+</head>
+<body>
+	<div id="zmy-loading"><div id="zmy-loading-center"></div></div>
+	<div class="zmy-filter"></div>
+
+	<div class="tool-page">
+		<div class="tool-header">
+			<a href="./index.html" class="back-btn">
+				<svg viewBox="0 0 1024 1024" style="width:18px;height:18px" fill="currentColor"><path d="M768 352c0-17.066667-6.4-34.133333-19.2-46.933333-25.6-25.6-68.266667-25.6-93.866667 0L320 640c-25.6 25.6-25.6 68.266667 0 93.866667l334.933333 334.933333c25.6 25.6 68.266667 25.6 93.866667 0s25.6-68.266667 0-93.866667L460.8 686.933333l288-288C768 386.133333 768 369.066667 768 352z" transform="rotate(180 512 512)"></path></svg>
+				返回主页
+			</a>
+			<h1>在线工具</h1>
+			<div id="user-area" style="width:auto"></div>
+		</div>
+
+		<div class="tool-grid" id="tool-grid">
+			<!-- 工具卡片由JS渲染 -->
+		</div>
+
+		<!-- ============= 身份证查询 ============= -->
+		<div id="panel-idcard" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🆔 身份证信息查询</h2>
+			<p class="desc-text">输入18位身份证号码，查询归属地、性别、出生日期等信息</p>
+			<div class="form-group">
+				<label>身份证号码</label>
+				<input type="text" id="idcard-input" placeholder="请输入18位身份证号码" maxlength="18" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="queryIdcard()">开始查询</button>
+				<button class="btn-secondary" onclick="clearAll('idcard')">清空</button>
+			</div>
+			<div class="error-box" id="idcard-error"></div>
+			<div class="result-box" id="idcard-result">
+				<div class="result-title">📋 查询结果</div>
+				<div class="result-content" id="idcard-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= 短信测压 ============= -->
+		<div id="panel-phone" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>📱 输入手机号发送短信</h2>
+			<p class="desc-text">输入11位手机号码发送短信信息</p>
+			<div class="form-group">
+				<label>手机号码</label>
+				<input type="text" id="phone-input" placeholder="请输入11位手机号码" maxlength="11" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="queryPhone()">开始查询</button>
+				<button class="btn-secondary" onclick="clearAll('phone')">清空</button>
+			</div>
+			<div class="error-box" id="phone-error"></div>
+			<div class="result-box" id="phone-result">
+				<div class="result-title">📋 查询结果</div>
+				<div class="result-content" id="phone-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= 抖音ID查询 ============= -->
+		<div id="panel-douyin" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🎵 抖音ID信息查询</h2>
+			<p class="desc-text">输入抖音用户ID，查询用户主页链接及详细信息</p>
+			<div class="form-group">
+				<label>抖音用户ID</label>
+				<input type="text" id="douyin-input" placeholder="例如：92932161232" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="queryDouyin()">开始查询</button>
+				<button class="btn-secondary" onclick="clearAll('douyin')">清空</button>
+			</div>
+			<div class="error-box" id="douyin-error"></div>
+			<div class="result-box" id="douyin-result">
+				<div class="result-title">📋 查询结果</div>
+				<div class="result-content" id="douyin-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= QQ查询 ============= -->
+		<div id="panel-qq" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🐧 QQ信息查询</h2>
+			<p class="desc-text">输入QQ号码，查询昵称、头像、绑定信息等</p>
+			<div class="form-group">
+				<label>QQ号码</label>
+				<input type="text" id="qq-input" placeholder="请输入QQ号码" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="queryQq()">开始查询</button>
+				<button class="btn-secondary" onclick="clearAll('qq')">清空</button>
+			</div>
+			<div class="error-box" id="qq-error"></div>
+			<div class="result-box" id="qq-result">
+				<div class="result-title">📋 查询结果</div>
+				<div class="result-content" id="qq-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= 随机图片 ============= -->
+		<div id="panel-random" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🎨 随机高清壁纸</h2>
+			<p class="desc-text">调用高质量随机图片接口，一键获取精美壁纸，支持重复刷新获得不同图片</p>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="getRandomImage()">🎲 获取随机图片</button>
+				<button class="btn-secondary" onclick="clearAll('random')">清空</button>
+			</div>
+			<div class="error-box" id="random-error"></div>
+			<div class="result-box" id="random-result">
+				<div class="result-title">🖼️ 随机图片结果</div>
+				<div class="result-content" id="random-content" style="text-align:center"></div>
+			</div>
+		</div>
+		<!-- ============= Python混淆还原 ============= -->
+		<div id="panel-python" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🔐 Python混淆拼音还原</h2>
+			<p class="desc-text">输入被混淆的拼音/谐音文本，自动解析还原原始内容</p>
+			<div class="form-group">
+				<label>混淆文本</label>
+				<textarea id="python-input" placeholder="输入要还原的拼音/谐音混淆内容..."></textarea>
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="queryPython()">开始解析</button>
+				<button class="btn-secondary" onclick="clearAll('python')">清空</button>
+			</div>
+			<div class="error-box" id="python-error"></div>
+			<div class="result-box" id="python-result">
+				<div class="result-title">📋 解析结果</div>
+				<div class="result-content" id="python-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= IP地址查询 ============= -->
+		<div id="panel-ip" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🌐 IP地址信息查询</h2>
+			<p class="desc-text">输入IP地址，查询归属地、运营商、时区等详细信息</p>
+			<div class="form-group">
+				<label>IP地址</label>
+				<input type="text" id="ip-input" placeholder="例如：8.8.8.8 或留空查询本机IP" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="queryIp()">查询IP信息</button>
+				<button class="btn-secondary" onclick="clearAll('ip')">清空</button>
+			</div>
+			<div class="error-box" id="ip-error"></div>
+			<div class="result-box" id="ip-result">
+				<div class="result-title">📋 查询结果</div>
+				<div class="result-content" id="ip-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= URL编码解码 ============= -->
+		<div id="panel-url" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🔗 URL编码/解码</h2>
+			<p class="desc-text">对URL进行编码或解码，支持中文字符和特殊字符处理</p>
+			<div class="form-group">
+				<label>输入文本</label>
+				<textarea id="url-input" placeholder="输入要编码或解码的URL文本..."></textarea>
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="urlEncode()">编码</button>
+				<button class="btn-primary" onclick="urlDecode()" style="background:linear-gradient(135deg,#10b981,#059669)">解码</button>
+				<button class="btn-secondary" onclick="clearAll('url')">清空</button>
+			</div>
+			<div class="error-box" id="url-error"></div>
+			<div class="result-box" id="url-result">
+				<div class="result-title">📋 处理结果</div>
+				<div class="result-content" id="url-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= 时间戳转换 ============= -->
+		<div id="panel-timestamp" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>⏰ 时间戳转换工具</h2>
+			<p class="desc-text">时间戳与日期互相转换，支持秒级和毫秒级时间戳</p>
+			<div class="form-group">
+				<label>时间戳 → 日期</label>
+				<div style="display:flex;gap:10px">
+					<input type="text" id="ts-input" placeholder="输入时间戳（秒或毫秒）" style="flex:1" />
+					<select id="ts-type" style="width:100px">
+						<option value="s">秒</option>
+						<option value="ms">毫秒</option>
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
+				<label>日期 → 时间戳</label>
+				<input type="text" id="date-input" placeholder="例如：2026-08-12 12:00:00" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="tsToDate()">时间戳转日期</button>
+				<button class="btn-primary" onclick="dateToTs()" style="background:linear-gradient(135deg,#10b981,#059669)">日期转时间戳</button>
+				<button class="btn-secondary" onclick="clearAll('timestamp')">清空</button>
+			</div>
+			<div class="error-box" id="timestamp-error"></div>
+			<div class="result-box" id="timestamp-result">
+				<div class="result-title">📋 转换结果</div>
+				<div class="result-content" id="timestamp-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= 二维码生成 ============= -->
+		<div id="panel-qrcode" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>📱 二维码生成器</h2>
+			<p class="desc-text">将文本或链接生成二维码图片，支持自定义尺寸和颜色</p>
+			<div class="form-group">
+				<label>文本/链接</label>
+				<textarea id="qr-input" placeholder="输入要生成二维码的文本或链接..."></textarea>
+			</div>
+			<div class="form-group">
+				<label>尺寸 (像素)</label>
+				<input type="text" id="qr-size" value="300" placeholder="建议范围：100-800" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="generateQr()">生成二维码</button>
+				<button class="btn-secondary" onclick="clearAll('qrcode')">清空</button>
+			</div>
+			<div class="error-box" id="qrcode-error"></div>
+			<div class="result-box" id="qrcode-result">
+				<div class="result-title">📱 二维码结果</div>
+				<div class="result-content" id="qrcode-content" style="text-align:center"></div>
+			</div>
+		</div>
+
+		<!-- ============= Base64编解码 ============= -->
+		<div id="panel-base64" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🔡 Base64 编解码</h2>
+			<p class="desc-text">Base64编码和解码工具，支持文本与Base64互转</p>
+			<div class="form-group">
+				<label>输入文本</label>
+				<textarea id="base64-input" placeholder="输入要编码或解码的文本..."></textarea>
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="base64Encode()">编码 →</button>
+				<button class="btn-primary" onclick="base64Decode()" style="background:linear-gradient(135deg,#10b981,#059669)">← 解码</button>
+				<button class="btn-secondary" onclick="clearAll('base64')">清空</button>
+			</div>
+			<div class="error-box" id="base64-error"></div>
+			<div class="result-box" id="base64-result">
+				<div class="result-title">📋 处理结果</div>
+				<div class="result-content" id="base64-content"></div>
+			</div>
+		</div>
+
+		<!-- ============= 颜色选择器 ============= -->
+		<div id="panel-color" class="tool-panel">
+			<div class="back-to-list" onclick="closePanel()">← 返回工具列表</div>
+			<h2>🎨 颜色选择器</h2>
+			<p class="desc-text">在线取色工具，支持HEX/RGB/HSL格式互转，点击色块复制色值</p>
+			<div class="form-group">
+				<label>颜色选择</label>
+				<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+					<input type="color" id="color-picker" value="#7c3aed" style="width:80px;height:80px;border:none;border-radius:16px;cursor:pointer" onchange="updateColorResult()" />
+					<div style="flex:1;min-width:200px">
+						<div style="margin-bottom:8px"><input type="text" id="color-hex" value="#7c3aed" placeholder="#RRGGBB" oninput="updateColorFromHex()" style="font-family:monospace" /></div>
+						<div style="display:flex;gap:8px;margin-bottom:8px">
+							<input type="text" id="color-rgb" placeholder="rgb(r,g,b)" readonly style="flex:1;font-family:monospace;cursor:pointer" onclick="copyText(document.getElementById('color-rgb').textContent)" />
+							<button class="btn-secondary" style="padding:8px 14px;font-size:12px" onclick="copyText(document.getElementById('color-rgb').textContent)">复制</button>
+						</div>
+						<div style="display:flex;gap:8px">
+							<input type="text" id="color-hsl" placeholder="hsl(h,s%,l%)" readonly style="flex:1;font-family:monospace;cursor:pointer" onclick="copyText(document.getElementById('color-hsl').textContent)" />
+							<button class="btn-secondary" style="padding:8px 14px;font-size:12px" onclick="copyText(document.getElementById('color-hsl').textContent)">复制</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="form-group">
+				<label>HEX 输入</label>
+				<input type="text" id="color-hex-input" placeholder="输入HEX值，如：FF6600（无需#）" oninput="updateColorFromHexInput()" />
+			</div>
+			<div class="btn-row">
+				<button class="btn-primary" onclick="showColorPresets()">预设色板</button>
+				<button class="btn-secondary" onclick="clearAll('color')">清空</button>
+			</div>
+			<div class="error-box" id="color-error"></div>
+			<div class="result-box" id="color-result">
+				<div class="result-title">🎨 颜色预览</div>
+				<div class="result-content" id="color-content"></div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 登录弹窗 -->
+	<div class="login-modal-mask" id="login-modal-mask">
+		<div class="login-modal" id="login-modal">
+			<button class="login-modal-close" onclick="closeLoginModal()">✕</button>
+			<div class="form-header">
+				<div class="sparkle-icon">🔐</div>
+				<h2>工具登录</h2>
+				<p>登录后可使用全部在线工具</p>
+			</div>
+			<div class="error-msg" id="login-error"></div>
+			<div class="form-group">
+				<label>邮箱地址</label>
+				<input type="email" id="login-email" placeholder="请输入您的邮箱" />
+			</div>
+			<div class="form-group">
+				<label>验证码</label>
+				<div class="code-input-group">
+					<input type="text" id="login-code" placeholder="6位验证码" maxlength="6" />
+					<button class="code-btn" id="btn-send-code" onclick="sendLoginCode()">获取验证码</button>
+				</div>
+			</div>
+			<button class="btn-login" id="btn-do-login" onclick="doLogin()">登 录</button>
+			<div class="login-tip">验证码将发送至您的邮箱，注意查收</div>
+		</div>
+	</div>
+
+	<script>
+		const tools = [
+			{ id: 'idcard', icon: '🆔', name: '身份证查询', desc: '身份证归属地/性别/生日', cat: '查询', needLogin: true },
+			{ id: 'qq', icon: '🐧', name: 'QQ信息查询', desc: 'QQ昵称/头像/绑定信息', cat: '查询', needLogin: true },
+			{ id: 'phone', icon: '📱', name: '手机号查询', desc: '号码归属地/运营商查询', cat: '查询', needLogin: true },
+			{ id: 'douyin', icon: '🎵', name: '抖音ID查询', desc: '抖音用户主页信息', cat: '查询', needLogin: true },
+			{ id: 'random', icon: '🎨', name: '随机高清壁纸', desc: '一键获取高质量随机图片', cat: '图片', needLogin: true },
+			{ id: 'python', icon: '🔐', name: 'Python混淆还原', desc: '拼音/谐音内容解析', cat: '解析', needLogin: true },
+			{ id: 'ip', icon: '🌐', name: 'IP地址查询', desc: 'IP归属地/运营商/时区', cat: '查询', needLogin: true },
+			{ id: 'url', icon: '🔗', name: 'URL编码解码', desc: 'URL编码/解码工具', cat: '编码', needLogin: true },
+			{ id: 'timestamp', icon: '⏰', name: '时间戳转换', desc: '时间戳与日期互转', cat: '转换', needLogin: true },
+			{ id: 'qrcode', icon: '📱', name: '二维码生成', desc: '文本/链接生成二维码', cat: '生成', needLogin: true },
+			{ id: 'base64', icon: '🔡', name: 'Base64编解码', desc: 'Base64编码/解码工具', cat: '编码', needLogin: true },
+			{ id: 'color', icon: '🎨', name: '颜色选择器', desc: '在线取色/颜色转换', cat: '工具', needLogin: true }
+		];
+
+		let codeCountdown = 0;
+		let codeTimer = null;
+		let toolLoginToken = localStorage.getItem('tool_token') || '';
+		let currentToolId = '';
+
+		// ============ 工具卡片渲染 ============
+		function renderToolGrid() {
+			const grid = document.getElementById('tool-grid');
+			grid.innerHTML = tools.map(t => `
+				<div class="tool-card" onclick="tryOpenTool('${t.id}')">
+					<span class="tool-icon">${t.icon}</span>
+					<div class="tool-name">${t.name}</div>
+					<div class="tool-desc">${t.desc}</div>
+				</div>
+			`).join('');
+		}
+
+		function tryOpenTool(id) {
+			const t = tools.find(x => x.id === id);
+			if (!t) return;
+			if (t.needLogin && !toolLoginToken) {
+				showLoginModal();
+				return;
+			}
+			openTool(id);
+		}
+
+		function openTool(id) {
+			currentToolId = id;
+			document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+			const panel = document.getElementById('panel-' + id);
+			if (panel) panel.classList.add('active');
+			document.getElementById('tool-grid').style.display = 'none';
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+
+		function closePanel() {
+			document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+			document.getElementById('tool-grid').style.display = 'grid';
+			currentToolId = '';
+		}
+
+		// ============ 通用 ============
+		function clearAll(type) {
+			const inputMap = { ip: 'ip-input', url: 'url-input', timestamp: 'ts-input', qrcode: 'qr-input', base64: 'base64-input', color: 'color-hex-input' };
+			const inputId = inputMap[type] || (type + '-input');
+			const inputEl = document.getElementById(inputId);
+			if (inputEl) inputEl.value = '';
+			const resultEl = document.getElementById(type + '-result');
+			if (resultEl) resultEl.classList.remove('show');
+			const errorEl = document.getElementById(type + '-error');
+			if (errorEl) errorEl.classList.remove('show');
+		}
+
+		function showError(type, msg) {
+			const el = document.getElementById(type + '-error');
+			if (el) {
+				el.textContent = '❌ ' + msg;
+				el.classList.add('show');
+			}
+			const resEl = document.getElementById(type + '-result');
+			if (resEl) resEl.classList.remove('show');
+		}
+
+		function showLoading(type, title) {
+			const errEl = document.getElementById(type + '-error');
+			if (errEl) errEl.classList.remove('show');
+			const box = document.getElementById(type + '-result');
+			if (box) {
+				box.classList.add('show');
+				const contentEl = document.getElementById(type + '-content');
+				if (contentEl) contentEl.innerHTML = `<div class="empty-state"><span class="loading-dots">${title || '查询中'}</span></div>`;
+			}
+		}
+
+		// ============ 身份证查询 ============
+		async function queryIdcard() {
+			const id = document.getElementById('idcard-input').value.trim();
+			if (!/^\d{17}[\dXx]$/.test(id)) { showError('idcard', '请输入有效的18位身份证号码（末位可为X）'); return; }
+			showLoading('idcard', '查询身份证信息');
+			try {
+				const r = await fetch('./api/idcard_query.php', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Authorization': toolLoginToken ? 'Bearer ' + toolLoginToken : '' },
+					body: JSON.stringify({ id_card: id })
+				});
+				const d = await r.json();
+				const box = document.getElementById('idcard-content');
+				if (!d.success) {
+					box.innerHTML = `<div class="empty-state">查询失败：${d.msg || '未知错误'}</div>`;
+					return;
+				}
+				const raw = d.data || {};
+				let html = '<div class="info-grid">';
+				const displayKeys = {
+					'area': '归属地区', 'province': '省份', 'city': '城市', 'prefecture': '区县',
+					'gender': '性别', 'sex': '性别', 'birthday': '出生日期', 'age': '年龄',
+					'zodiac': '生肖', 'constellation': '星座'
+				};
+				let found = false;
+				for (const [k, v] of Object.entries(displayKeys)) {
+					if (raw[k] !== undefined && raw[k] !== null && raw[k] !== '') {
+						html += `<div class="info-item"><div class="label">${v}</div><div class="value">${raw[k]}</div></div>`;
+						found = true;
+					}
+				}
+				// 尝试嵌套 data.data
+				if (!found && raw.data && typeof raw.data === 'object') {
+					const inner = raw.data;
+					for (const [k, v] of Object.entries(displayKeys)) {
+						if (inner[k] !== undefined && inner[k] !== null && inner[k] !== '') {
+							html += `<div class="info-item"><div class="label">${v}</div><div class="value">${inner[k]}</div></div>`;
+							found = true;
+						}
+					}
+				}
+				html += '</div>';
+				if (!found) {
+					html += `<div style="margin-top:16px"><div style="font-size:12px;color:var(--item_left_text_color);margin-bottom:8px">原始返回：</div><pre class="code-output">${JSON.stringify(raw, null, 2)}</pre></div>`;
+				}
+				box.innerHTML = html;
+			} catch (e) {
+				showError('idcard', '网络异常：' + (e.message || e));
+			}
+		}
+
+		// ============ 手机号查询 ============
+		async function queryPhone() {
+			const phone = document.getElementById('phone-input').value.trim();
+			if (!/^1\d{10}$/.test(phone)) { showError('phone', '请输入有效的11位手机号码'); return; }
+			showLoading('phone', '查询手机号归属地');
+			try {
+				const r = await fetch('./api/phone_query.php', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Authorization': toolLoginToken ? 'Bearer ' + toolLoginToken : '' },
+					body: JSON.stringify({ phone: phone })
+				});
+				const d = await r.json();
+				const box = document.getElementById('phone-content');
+				if (!d.success) {
+					box.innerHTML = `<div class="empty-state">查询失败：${d.msg || '未知错误'}</div>`;
+					return;
+				}
+				const raw = d.data || {};
+				let html = '<div class="info-grid">';
+				const displayKeys = {
+					'phone': '手机号码', 'province': '省份', 'city': '城市', 'area': '归属地',
+					'carrier': '运营商', 'type': '卡类型', 'postcode': '邮政编码', 'areacode': '区号',
+					'sp': '服务商'
+				};
+				let found = false;
+				for (const [k, v] of Object.entries(displayKeys)) {
+					if (raw[k] !== undefined && raw[k] !== null && raw[k] !== '') {
+						html += `<div class="info-item"><div class="label">${v}</div><div class="value">${raw[k]}</div></div>`;
+						found = true;
+					}
+				}
+				if (!found && raw.data && typeof raw.data === 'object') {
+					const inner = raw.data;
+					for (const [k, v] of Object.entries(displayKeys)) {
+						if (inner[k] !== undefined && inner[k] !== null && inner[k] !== '') {
+							html += `<div class="info-item"><div class="label">${v}</div><div class="value">${inner[k]}</div></div>`;
+							found = true;
+						}
+					}
+				}
+				html += '</div>';
+				if (!found) {
+					html += `<div style="margin-top:16px"><div style="font-size:12px;color:var(--item_left_text_color);margin-bottom:8px">原始返回：</div><pre class="code-output">${JSON.stringify(raw, null, 2)}</pre></div>`;
+				}
+				box.innerHTML = html;
+			} catch (e) {
+				showError('phone', '网络异常：' + (e.message || e));
+			}
+		}
+
+		// ============ 抖音ID查询 ============
+		async function queryDouyin() {
+			const id = document.getElementById('douyin-input').value.trim();
+			if (!id) { showError('douyin', '请输入抖音ID'); return; }
+			showLoading('douyin', '查询抖音用户信息');
+			try {
+				const r = await fetch('./api/douyin_query.php', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Authorization': toolLoginToken ? 'Bearer ' + toolLoginToken : '' },
+					body: JSON.stringify({ douyin_id: id })
+				});
+				const d = await r.json();
+				const box = document.getElementById('douyin-content');
+				if (!d.success) {
+					box.innerHTML = `<div class="empty-state" style="text-align:center"><div style="font-size:48px;margin-bottom:12px">😔</div><div>查询失败：${d.msg || '未知错误'}</div><div style="margin-top:12px"><button class="btn-secondary" onclick="window.open('https://www.douyin.com/user/${id}', '_blank')">🔗 直接跳转抖音主页</button></div></div>`;
+					return;
+				}
+				let html = '';
+				const link = d.link || '';
+				const data = d.data || {};
+				const raw = d.raw || {};
+
+				if (link) {
+					html += `<div style="margin-bottom:16px;padding:16px;border-radius:16px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);text-align:center">
+						<div style="font-size:12px;color:var(--item_left_text_color);margin-bottom:8px">🔗 用户主页链接</div>
+						<a href="${link}" target="_blank" class="link-btn" style="font-size:15px;word-break:break-all">${link} ↗</a>
+						<div style="margin-top:10px"><button class="btn-primary" onclick="window.open('${link}', '_blank')">🚀 点击跳转抖音主页</button></div>
+					</div>`;
+				}
+
+				if (d.msg) {
+					html += `<div style="margin-bottom:12px;padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);font-size:13px;color:#10b981">✅ ${d.msg}</div>`;
+				}
+
+				if (Object.keys(data).length > 0) {
+					html += '<div class="info-grid">';
+					for (const [k, v] of Object.entries(data)) {
+						if (v !== null && v !== '' && typeof v !== 'object') {
+							const isLink = (k === '链接' || k === '主页' || (typeof v === 'string' && (v.startsWith('http') || v.startsWith('https'))));
+							if (isLink) {
+								html += `<div class="info-item" style="grid-column:1/-1"><div class="label">${k}</div><div class="value"><a href="${v}" target="_blank" class="link-btn" style="word-break:break-all">${v} ↗</a></div></div>`;
+							} else {
+								html += `<div class="info-item"><div class="label">${k}</div><div class="value">${v}</div></div>`;
+							}
+						}
+					}
+					html += '</div>';
+				}
+
+				if (!link && Object.keys(data).length === 0) {
+					html += `<div class="empty-state">接口未返回详细信息</div>`;
+				}
+
+				html += `<div style="margin-top:18px"><div style="font-size:12px;color:var(--item_left_text_color);margin-bottom:8px;cursor:pointer" onclick="document.getElementById('dy-raw').style.display=document.getElementById('dy-raw').style.display==='none'?'block':'none'">▸ 查看原始JSON返回</div><pre class="code-output" id="dy-raw" style="display:none">${JSON.stringify(raw, null, 2)}</pre></div>`;
+				box.innerHTML = html;
+			} catch (e) {
+				showError('douyin', '网络异常：' + (e.message || e));
+			}
+		}
+
+		// ============ QQ查询 ============
+	async function queryQq() {
+		const qq = document.getElementById('qq-input').value.trim();
+		if (!/^\d{5,12}$/.test(qq)) { showError('qq', '请输入有效的QQ号码（5-12位数字）'); return; }
+		showLoading('qq', '查询QQ信息');
+		try {
+			const r = await fetch('./api/qq_query.php', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'Authorization': toolLoginToken ? 'Bearer ' + toolLoginToken : '' },
+				body: JSON.stringify({ qq: qq })
+			});
+			const d = await r.json();
+			const box = document.getElementById('qq-content');
+			if (!d.success) {
+				box.innerHTML = `<div class="empty-state">查询失败：${d.msg || '未知错误'}</div>`;
+				return;
+			}
+			const raw = d.data || {};
+			let html = '<div class="info-grid">';
+			const displayKeys = {
+				'qq': 'QQ号码', 'qquin': 'QQ', 'uin': 'UIN',
+				'nick': '昵称', 'nickname': '昵称', 'name': '名称',
+				'age': '年龄', 'gender': '性别', 'sex': '性别',
+				'city': '城市', 'area': '地区', 'province': '省份',
+				'phone': '绑定手机号', 'mobile': '手机号', 'email': '绑定邮箱',
+				'vip': 'VIP等级', 'level': '等级', 'qid': 'QID'
+			};
+			let found = false;
+			// 先查顶层
+			for (const [k, v] of Object.entries(displayKeys)) {
+				if (raw[k] !== undefined && raw[k] !== null && raw[k] !== '') {
+					html += `<div class="info-item"><div class="label">${v}</div><div class="value">${raw[k]}</div></div>`;
+					found = true;
+				}
+			}
+			// 头像特殊处理
+			let avatarUrl = '';
+			if (raw.avatar || raw.head || raw.img || raw.headimg) {
+				avatarUrl = raw.avatar || raw.head || raw.img || raw.headimg;
+			} else {
+				avatarUrl = `https://q1.qlogo.cn/g?b=qq&nk=${qq}&s=100`;
+			}
+			html += `<div class="info-item" style="grid-column:1/-1;text-align:center"><div class="label">头像</div><img src="${avatarUrl}" onerror="this.style.display='none'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:8px auto 0;display:block;border:2px solid var(--purple_text_color)"/></div>`;
+			// 查嵌套 data.data
+			if (!found && raw.data && typeof raw.data === 'object') {
+				const inner = raw.data;
+				for (const [k, v] of Object.entries(displayKeys)) {
+					if (inner[k] !== undefined && inner[k] !== null && inner[k] !== '') {
+						html += `<div class="info-item"><div class="label">${v}</div><div class="value">${inner[k]}</div></div>`;
+						found = true;
+					}
+				}
+			}
+			html += '</div>';
+			// 若还是没内容显示原始JSON
+			if (!found && Object.keys(raw).length > 0) {
+				html += `<div style="margin-top:16px"><div style="font-size:12px;color:var(--item_left_text_color);margin-bottom:8px">原始返回：</div><pre class="code-output">${JSON.stringify(raw, null, 2)}</pre></div>`;
+			}
+			box.innerHTML = html;
+		} catch (e) {
+			showError('qq', '网络异常：' + (e.message || e));
+		}
+	}
+
+		// ============ 随机图片 ============
+	function getRandomImage() {
+		document.getElementById('random-error').classList.remove('show');
+		const container = document.getElementById('random-content');
+		document.getElementById('random-result').classList.add('show');
+		const ts = Date.now() + '_' + Math.floor(Math.random()*10000);
+		const loadingHtml = `
+			<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:20px;color:var(--item_left_text_color);font-size:14px">
+				<span class="loading-dots">正在加载随机图片</span>
+			</div>`;
+		container.innerHTML = loadingHtml;
+
+		// 预加载图片，防止闪烁
+		const imgSrc = './api/random_image.php?_t=' + ts;
+		const testImg = new Image();
+		testImg.onload = function(){
+			container.innerHTML = `
+				<div style="position:relative;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.18);max-width:700px;margin:0 auto">
+					<img id="random-img" src="${imgSrc}" style="width:100%;height:auto;display:block;cursor:pointer" alt="随机壁纸" onclick="window.open(this.src,'_blank')" />
+					<div style="position:absolute;bottom:0;left:0;right:0;padding:14px;background:linear-gradient(to top, rgba(0,0,0,0.55), transparent);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:space-between">
+						<span>💡 点击图片可在新窗口打开 / 右键另存</span>
+						<a href="${imgSrc}" download="random_wallpaper.jpg" style="color:#fff;text-decoration:underline;font-weight:600" onclick="event.stopPropagation()">⬇️ 下载</a>
+					</div>
+				</div>
+				<div style="margin-top:16px;font-size:12px;color:var(--item_left_text_color)">接口来源：uapis.cn 随机图片API</div>`;
+		};
+		testImg.onerror = function(){
+			container.innerHTML = '';
+			showError('random', '加载图片失败，请重试');
+		};
+		testImg.src = imgSrc;
+	}
+		// ============ Python混淆还原 ============
+		async function queryPython() {
+			if (!toolLoginToken) { showLoginModal(); return; }
+			const text = document.getElementById('python-input').value.trim();
+			if (!text) { showError('python', '请输入要解析的混淆文本'); return; }
+			showLoading('python', '解析中');
+			try {
+				const r = await fetch('./api/python_obfuscate.php', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + toolLoginToken },
+					body: JSON.stringify({ source: text })
+				});
+				const d = await r.json();
+				const box = document.getElementById('python-content');
+				if (!d.success) {
+					box.innerHTML = `<div class="empty-state">解析失败：${d.msg || '未知错误'}</div>`;
+					return;
+				}
+				const raw = d.data || {};
+				let html = '';
+				// 优先展示 data.result 或 data 文本
+				let resultText = '';
+				if (typeof raw === 'string') resultText = raw;
+				else if (raw.result) resultText = raw.result;
+				else if (raw.data && typeof raw.data === 'string') resultText = raw.data;
+				else if (raw.msg) resultText = raw.msg;
+				if (resultText) {
+					html += `<div style="font-size:13px;color:var(--item_left_text_color);margin-bottom:10px">✅ 解析结果：</div>`;
+					html += `<pre class="code-output">${resultText}</pre>`;
+				}
+				html += `<div style="margin-top:18px"><div style="font-size:12px;color:var(--item_left_text_color);margin-bottom:8px">完整原始返回：</div><pre class="code-output">${JSON.stringify(raw, null, 2)}</pre></div>`;
+				box.innerHTML = html;
+			} catch (e) {
+				showError('python', '网络异常：' + (e.message || e));
+			}
+		}
+
+		// ============ IP地址查询 ============
+		async function queryIp() {
+			const ip = document.getElementById('ip-input').value.trim();
+			showLoading('ip', '查询IP信息');
+			try {
+				const url = ip ? `https://ipapi.co/${encodeURIComponent(ip)}/json/` : 'https://ipapi.co/json/';
+				const r = await fetch(url);
+				const d = await r.json();
+				const box = document.getElementById('ip-content');
+				if (d.error || d.status === 404) {
+					box.innerHTML = `<div class="empty-state">查询失败：${d.reason || 'IP地址不存在或查询服务不可用'}</div>`;
+					return;
+				}
+				let html = '<div class="info-grid">';
+				const displayMap = {
+					'ip': 'IP地址', 'city': '城市', 'region': '地区', 'country_name': '国家',
+					'postal': '邮政编码', 'latitude': '纬度', 'longitude': '经度',
+					'timezone': '时区', 'currency': '货币', 'languages': '语言',
+					'asn': 'ASN编号', 'org': '组织/运营商', 'isp': 'ISP'
+				};
+				let found = false;
+				for (const [k, v] of Object.entries(displayMap)) {
+					if (d[k] !== undefined && d[k] !== null && d[k] !== '' && !Array.isArray(d[k])) {
+						html += `<div class="info-item"><div class="label">${v}</div><div class="value">${d[k]}</div></div>`;
+						found = true;
+					}
+				}
+				if (d.languages && Array.isArray(d.languages)) {
+					html += `<div class="info-item"><div class="label">语言</div><div class="value">${d.languages.join(', ')}</div></div>`;
+				}
+				html += '</div>';
+				if (!found) {
+					html += `<pre class="code-output">${JSON.stringify(d, null, 2)}</pre>`;
+				}
+				box.innerHTML = html;
+			} catch (e) {
+				showError('ip', '网络异常：' + (e.message || e));
+			}
+		}
+
+		// ============ URL编码/解码 ============
+		function urlEncode() {
+			const text = document.getElementById('url-input').value.trim();
+			if (!text) { showError('url', '请输入要编码的文本'); return; }
+			try {
+				const encoded = encodeURIComponent(text);
+				document.getElementById('url-error').classList.remove('show');
+				const box = document.getElementById('url-content');
+				box.innerHTML = `<div style="margin-bottom:10px;font-size:12px;color:var(--item_left_text_color)">编码结果：</div><pre class="code-output">${encoded}</pre><div style="margin-top:10px"><button class="btn-secondary" onclick="copyText(\`${encoded}\`)">复制结果</button></div>`;
+				document.getElementById('url-result').classList.add('show');
+			} catch (e) {
+				showError('url', '编码失败：' + e.message);
+			}
+		}
+		function urlDecode() {
+			const text = document.getElementById('url-input').value.trim();
+			if (!text) { showError('url', '请输入要解码的文本'); return; }
+			try {
+				const decoded = decodeURIComponent(text);
+				document.getElementById('url-error').classList.remove('show');
+				const box = document.getElementById('url-content');
+				box.innerHTML = `<div style="margin-bottom:10px;font-size:12px;color:var(--item_left_text_color)">解码结果：</div><pre class="code-output">${decoded}</pre><div style="margin-top:10px"><button class="btn-secondary" onclick="copyText(\`${decoded}\`)">复制结果</button></div>`;
+				document.getElementById('url-result').classList.add('show');
+			} catch (e) {
+				showError('url', '解码失败：输入的不是合法的URL编码');
+			}
+		}
+
+		// ============ 时间戳转换 ============
+		function tsToDate() {
+			const ts = document.getElementById('ts-input').value.trim();
+			const type = document.getElementById('ts-type').value;
+			if (!ts) { showError('timestamp', '请输入时间戳'); return; }
+			const num = Number(ts);
+			if (isNaN(num)) { showError('timestamp', '时间戳必须是数字'); return; }
+			const ms = type === 'ms' ? num : num * 1000;
+			try {
+				const date = new Date(ms);
+				if (isNaN(date.getTime())) { showError('timestamp', '无效的时间戳'); return; }
+				const pad = n => String(n).padStart(2, '0');
+				const str = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+				const utcStr = date.toUTCString();
+				const relative = getRelativeTime(date);
+				const box = document.getElementById('timestamp-content');
+				box.innerHTML = `<div class="info-grid">
+					<div class="info-item"><div class="label">本地时间</div><div class="value">${str}</div></div>
+					<div class="info-item"><div class="label">UTC时间</div><div class="value">${utcStr}</div></div>
+					<div class="info-item"><div class="label">相对时间</div><div class="value">${relative}</div></div>
+					<div class="info-item"><div class="label">毫秒时间戳</div><div class="value">${date.getTime()}</div></div>
+				</div>`;
+				document.getElementById('timestamp-error').classList.remove('show');
+				document.getElementById('timestamp-result').classList.add('show');
+			} catch (e) { showError('timestamp', '转换失败：' + e.message); }
+		}
+		function dateToTs() {
+			const dateStr = document.getElementById('date-input').value.trim();
+			if (!dateStr) { showError('timestamp', '请输入日期字符串'); return; }
+			const ts = new Date(dateStr).getTime();
+			if (isNaN(ts)) { showError('timestamp', '无效的日期格式，支持格式：2026-08-12 12:00:00'); return; }
+			const box = document.getElementById('timestamp-content');
+			box.innerHTML = `<div class="info-grid">
+				<div class="info-item"><div class="label">秒级时间戳</div><div class="value">${Math.floor(ts/1000)}</div></div>
+				<div class="info-item"><div class="label">毫秒时间戳</div><div class="value">${ts}</div></div>
+			</div>`;
+			document.getElementById('timestamp-error').classList.remove('show');
+			document.getElementById('timestamp-result').classList.add('show');
+		}
+		function getRelativeTime(date) {
+			const now = new Date();
+			const diff = now - date;
+			const absDiff = Math.abs(diff);
+			const units = [
+				{ name: '年', val: 365*24*60*60*1000 },
+				{ name: '月', val: 30*24*60*60*1000 },
+				{ name: '天', val: 24*60*60*1000 },
+				{ name: '小时', val: 60*60*1000 },
+				{ name: '分钟', val: 60*1000 },
+				{ name: '秒', val: 1000 }
+			];
+			for (const u of units) {
+				if (absDiff >= u.val) {
+					const v = Math.floor(absDiff / u.val);
+					return `${v} ${u.name}${diff < 0 ? '后' : '前'}`;
+				}
+			}
+			return '刚刚';
+		}
+
+		// ============ 二维码生成 ============
+		function generateQr() {
+			const text = document.getElementById('qr-input').value.trim();
+			const size = parseInt(document.getElementById('qr-size').value) || 300;
+			if (!text) { showError('qrcode', '请输入要生成二维码的文本'); return; }
+			if (size < 50 || size > 1000) { showError('qrcode', '尺寸范围应在50-1000之间'); return; }
+			const encoded = encodeURIComponent(text);
+			const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&margin=10`;
+			const box = document.getElementById('qr-content');
+			box.innerHTML = `<div style="padding:20px"><img src="${qrUrl}" alt="二维码" style="max-width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1)" onload="document.getElementById('qr-loading').style.display='none'" /><div id="qr-loading" style="color:var(--item_left_text_color);margin-top:10px">生成中...</div><div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn-primary" onclick="window.open('${qrUrl}','_blank')">新窗口打开</button><a href="${qrUrl}" download="qrcode.png" class="btn-secondary" style="text-decoration:none">下载图片</a></div></div>`;
+			document.getElementById('qrcode-error').classList.remove('show');
+			document.getElementById('qrcode-result').classList.add('show');
+		}
+
+		// ============ Base64编解码 ============
+		function base64Encode() {
+			const text = document.getElementById('base64-input').value;
+			if (!text) { showError('base64', '请输入要编码的文本'); return; }
+			try {
+				const encoded = btoa(unescape(encodeURIComponent(text)));
+				const box = document.getElementById('base64-content');
+				box.innerHTML = `<div style="margin-bottom:10px;font-size:12px;color:var(--item_left_text_color)">Base64 编码结果：</div><pre class="code-output">${encoded}</pre><div style="margin-top:10px"><button class="btn-secondary" onclick="copyText(\`${encoded}\`)">复制结果</button></div>`;
+				document.getElementById('base64-error').classList.remove('show');
+				document.getElementById('base64-result').classList.add('show');
+			} catch (e) { showError('base64', '编码失败：' + e.message); }
+		}
+		function base64Decode() {
+			const text = document.getElementById('base64-input').value.trim();
+			if (!text) { showError('base64', '请输入要解码的Base64文本'); return; }
+			try {
+				const decoded = decodeURIComponent(escape(atob(text)));
+				const box = document.getElementById('base64-content');
+				box.innerHTML = `<div style="margin-bottom:10px;font-size:12px;color:var(--item_left_text_color)">Base64 解码结果：</div><pre class="code-output">${decoded}</pre><div style="margin-top:10px"><button class="btn-secondary" onclick="copyText(\`${decoded}\`)">复制结果</button></div>`;
+				document.getElementById('base64-error').classList.remove('show');
+				document.getElementById('base64-result').classList.add('show');
+			} catch (e) { showError('base64', '解码失败：无效的Base64字符串'); }
+		}
+
+		// ============ 颜色选择器 ============
+		function updateColorResult() {
+			const hex = document.getElementById('color-picker').value;
+			document.getElementById('color-hex').value = hex;
+			const rgb = hexToRgb(hex);
+			const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+			document.getElementById('color-rgb').value = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+			document.getElementById('color-hsl').value = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
+			renderColorPreview(hex, rgb, hsl);
+		}
+		function updateColorFromHex() {
+			const hex = document.getElementById('color-hex').value.trim();
+			const valid = /^#?([0-9a-fA-F]{6})$/.test(hex.startsWith('#') ? hex : '#' + hex);
+			if (valid) {
+				const cleanHex = hex.startsWith('#') ? hex : '#' + hex;
+				document.getElementById('color-picker').value = cleanHex;
+				updateColorResult();
+			}
+		}
+		function updateColorFromHexInput() {
+			const hex = document.getElementById('color-hex-input').value.trim();
+			const valid = /^([0-9a-fA-F]{6})$/.test(hex);
+			if (valid) {
+				document.getElementById('color-picker').value = '#' + hex;
+				document.getElementById('color-hex').value = '#' + hex;
+				updateColorResult();
+			}
+		}
+		function hexToRgb(hex) {
+			const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+			return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : { r: 0, g: 0, b: 0 };
+		}
+		function rgbToHsl(r, g, b) {
+			r /= 255; g /= 255; b /= 255;
+			const max = Math.max(r, g, b), min = Math.min(r, g, b);
+			let h, s, l = (max + min) / 2;
+			if (max === min) { h = s = 0; }
+			else {
+				const d = max - min;
+				s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+				switch (max) {
+					case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
+					case g: h = (b - r) / d + 2; break;
+					case b: h = (r - g) / d + 4; break;
+				}
+				h /= 6;
+			}
+			return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+		}
+		function renderColorPreview(hex, rgb, hsl) {
+			const box = document.getElementById('color-content');
+			box.innerHTML = `
+				<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+					<div style="width:100px;height:100px;border-radius:20px;background:${hex};box-shadow:0 8px 30px rgba(0,0,0,0.2);border:2px solid rgba(255,255,255,0.3)"></div>
+					<div style="flex:1;min-width:180px">
+						<div style="display:flex;gap:8px;margin-bottom:8px">
+							<code style="flex:1;font-family:monospace;background:rgba(255,255,255,0.1);padding:6px 10px;border-radius:8px">HEX: ${hex.toUpperCase()}</code>
+							<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="copyText('${hex.toUpperCase()}')">复制</button>
+						</div>
+						<div style="display:flex;gap:8px;margin-bottom:8px">
+							<code style="flex:1;font-family:monospace;background:rgba(255,255,255,0.1);padding:6px 10px;border-radius:8px">RGB: ${rgb.r}, ${rgb.g}, ${rgb.b}</code>
+							<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="copyText('rgb(${rgb.r}, ${rgb.g}, ${rgb.b})')">复制</button>
+						</div>
+						<div style="display:flex;gap:8px">
+							<code style="flex:1;font-family:monospace;background:rgba(255,255,255,0.1);padding:6px 10px;border-radius:8px">HSL: ${hsl.h}, ${hsl.s}%, ${hsl.l}%</code>
+							<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="copyText('hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)')">复制</button>
+						</div>
+					</div>
+				</div>`;
+			document.getElementById('color-result').classList.add('show');
+		}
+		function showColorPresets() {
+			const presets = [
+				{ name: '紫罗兰', hex: '#7c3aed' },
+				{ name: '深紫', hex: '#5b21b6' },
+				{ name: '粉色', hex: '#ec4899' },
+				{ name: '玫红', hex: '#e11d48' },
+				{ name: '橙色', hex: '#f97316' },
+				{ name: '琥珀', hex: '#f59e0b' },
+				{ name: '翠绿', hex: '#10b981' },
+				{ name: '青绿', hex: '#14b8a6' },
+				{ name: '天蓝', hex: '#3b82f6' },
+				{ name: '深蓝', hex: '#1d4ed8' },
+				{ name: '青色', hex: '#06b6d4' },
+				{ name: '石灰', hex: '#64748b' },
+				{ name: '黑色', hex: '#1e293b' },
+				{ name: '白色', hex: '#ffffff' },
+				{ name: '金色', hex: '#d4a574' }
+			];
+			const box = document.getElementById('color-content');
+			box.innerHTML = '<div style="font-size:13px;color:var(--item_left_text_color);margin-bottom:12px">点击预设颜色快速选择：</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px">' + 
+				presets.map(p => `<div style="text-align:center;cursor:pointer" onclick="document.getElementById('color-picker').value='${p.hex}';updateColorResult()"><div style="width:100%;height:40px;border-radius:10px;background:${p.hex};border:2px solid rgba(255,255,255,0.3);box-shadow:0 2px 8px rgba(0,0,0,0.1)"></div><div style="font-size:11px;margin-top:4px;color:var(--item_left_text_color)">${p.name}</div></div>`).join('') + '</div>';
+			document.getElementById('color-result').classList.add('show');
+		}
+		function copyText(text) {
+			if (!text) return;
+			if (navigator.clipboard) {
+				navigator.clipboard.writeText(text).then(() => {
+					alert('已复制到剪贴板：' + text);
+				}).catch(() => {
+					const ta = document.createElement('textarea');
+					ta.value = text; document.body.appendChild(ta); ta.select();
+					document.execCommand('copy'); document.body.removeChild(ta);
+					alert('已复制到剪贴板：' + text);
+				});
+			} else {
+				const ta = document.createElement('textarea');
+				ta.value = text; document.body.appendChild(ta); ta.select();
+				document.execCommand('copy'); document.body.removeChild(ta);
+				alert('已复制到剪贴板：' + text);
+			}
+		}
+
+		// ============ 登录 ============
+		function renderUserArea() {
+			const area = document.getElementById('user-area');
+			if (toolLoginToken) {
+				const payload = parseJwt(toolLoginToken);
+				const email = payload?.email || '已登录';
+				const avatar = (email[0] || 'U').toUpperCase();
+				area.innerHTML = `
+					<div class="user-info-bar">
+						<div class="user-avatar">${avatar}</div>
+						<div class="user-email">${email}</div>
+						<button class="logout-btn" onclick="logoutTool()">退出</button>
+					</div>`;
+			} else {
+				area.innerHTML = `<button class="btn-primary" onclick="showLoginModal()" style="padding:8px 20px;font-size:13px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9)">🔐 登录使用</button>`;
+			}
+		}
+
+		function parseJwt(token) {
+			try {
+				const base64 = token.split('.')[1];
+				return JSON.parse(decodeURIComponent(escape(atob(base64))));
+			} catch (e) { return null; }
+		}
+
+		function showLoginModal() {
+			document.getElementById('login-modal-mask').classList.add('active');
+		}
+		function closeLoginModal() {
+		document.getElementById('login-modal-mask').classList.remove('active');
+		document.getElementById('login-error').style.display = 'none';
+	}
+		function showLoginError(msg) {
+			const el = document.getElementById('login-error');
+			el.textContent = msg;
+			el.style.display = 'block';
+		}
+
+		async function sendLoginCode() {
+			const email = document.getElementById('login-email').value.trim();
+			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showLoginError('请输入有效的邮箱地址'); return; }
+			const btn = document.getElementById('btn-send-code');
+			btn.disabled = true;
+			btn.textContent = '发送中...';
+			try {
+				const r = await fetch('./api/tool_login.php?action=send_code', {
+					method: 'POST', headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ email: email })
+				});
+				const d = await r.json();
+				if (d.success) {
+					codeCountdown = 60;
+					updateCodeBtn();
+					codeTimer = setInterval(updateCodeBtn, 1000);
+					document.getElementById('login-error').style.display = 'none';
+				} else {
+					btn.disabled = false;
+					btn.textContent = '获取验证码';
+					showLoginError(d.msg || '发送失败');
+				}
+			} catch (e) {
+				btn.disabled = false;
+				btn.textContent = '获取验证码';
+				showLoginError('发送异常：' + (e.message || e));
+			}
+		}
+
+		function updateCodeBtn() {
+			const btn = document.getElementById('btn-send-code');
+			if (codeCountdown > 0) {
+				btn.textContent = `${codeCountdown}s 后重发`;
+				codeCountdown--;
+			} else {
+				clearInterval(codeTimer);
+				btn.disabled = false;
+				btn.textContent = '重新获取';
+			}
+		}
+
+		async function doLogin() {
+			const email = document.getElementById('login-email').value.trim();
+			const code = document.getElementById('login-code').value.trim();
+			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showLoginError('请输入有效的邮箱地址'); return; }
+			if (!/^\d{6}$/.test(code)) { showLoginError('请输入6位验证码'); return; }
+			const btn = document.getElementById('btn-do-login');
+			btn.disabled = true;
+			btn.textContent = '登录中...';
+			try {
+				const r = await fetch('./api/tool_login.php?action=login', {
+					method: 'POST', headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ email: email, code: code })
+				});
+				const d = await r.json();
+				if (r.ok && d.token) {
+					toolLoginToken = d.token;
+					localStorage.setItem('tool_token', d.token);
+					renderUserArea();
+					closeLoginModal();
+					if (currentToolId) openTool(currentToolId);
+				} else {
+					btn.disabled = false;
+					btn.textContent = '登 录';
+					showLoginError(d.msg || '登录失败');
+				}
+			} catch (e) {
+				btn.disabled = false;
+				btn.textContent = '登 录';
+				showLoginError('登录异常：' + (e.message || e));
+			}
+		}
+
+		function logoutTool() {
+			toolLoginToken = '';
+			localStorage.removeItem('tool_token');
+			renderUserArea();
+			closePanel();
+		}
+
+		// ============ 启动 ============
+		function hideLoading() {
+			var loading = document.getElementById('zmy-loading');
+			var filter = document.querySelector('.zmy-filter');
+			if (loading) {
+				loading.style.opacity = '0';
+				loading.style.transition = 'opacity 0.4s ease';
+				setTimeout(function(){ if(loading && loading.parentNode) loading.parentNode.removeChild(loading); }, 400);
+			}
+			if (filter) {
+				filter.style.opacity = '0';
+				filter.style.transition = 'opacity 0.4s ease';
+				setTimeout(function(){ if(filter && filter.parentNode) filter.parentNode.removeChild(filter); }, 400);
+			}
+		}
+		window.addEventListener('DOMContentLoaded', function () {
+			try { renderToolGrid(); } catch(e) { console.error('renderToolGrid 错误:', e); }
+			try { renderUserArea(); } catch(e) { console.error('renderUserArea 错误:', e); }
+			try {
+				document.getElementById('login-modal-mask').addEventListener('click', function (e) {
+					if (e.target === this) closeLoginModal();
+				});
+			} catch(e) {}
+			// 500ms 后强制隐藏 loading（兜底）
+			setTimeout(hideLoading, 500);
+		});
+		// 如果 DOMContentLoaded 没触发（极端情况），用 load + 1.5s 双保险
+		window.addEventListener('load', function () {
+			try { renderToolGrid(); } catch(e) {}
+			setTimeout(hideLoading, 300);
+		});
+		setTimeout(hideLoading, 1500);
+	</script>
+	<script>
+	(function() {
+	    try { fetch('/api/visitor.php?path=' + encodeURIComponent(location.pathname)); } catch(e) {}
+	})();
+	</script>
+</body>
+</html>
