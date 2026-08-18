@@ -96,16 +96,6 @@ php -S 127.0.0.1:8080 -t .
 
 ---
 
-## ⚠️ 上传到 GitHub 前的注意事项
-
-仓库自带一份 `.gitignore`，已经自动忽略你的**个人上传**（头像、收款码、背景、相册、音乐等），只保留：
-- ✅ 源码（所有 `.html`、`api/*.php`、`static/*`、`.gitignore`、`README.md`、`deploy.html`、`about.html`）
-- ✅ 商品数据（`data/shop/products.json`）和商品图片（`uploads/shop/*`）
-- ✅ 软件列表（`data/software.json`）
-- ⚠️ 软件下载的二进制文件（`data/software_files/*`）默认忽略，如果要分享给他人可自行上传。
-
----
-
 ## 🛠 自定义小提示
 
 1. **联系页面支持上传完整 HTML**：后台 `联系设置` Tab 底部上传 `.html` 文件即可 100% 原样替换 contact.html。
